@@ -5,7 +5,7 @@ class GenerateMaximumProjectionJob:
     self.source_image_prefix = source_image_prefix
     self.destination = destination
 
-  def start(self):
+  def run(self):
     # read all the images
     # maximially project them
     # compute the z-axis distance distribution
@@ -18,7 +18,13 @@ def generate_maximum_projection_cli_str(source_image_prefix, destination):
 
 @cli.log.LoggingApp
 def generate_maximum_projection_cli(app):
-  generate_all_maximum_projections(app.params.source_image_prefix, app.params.destination)
+  try:
+    GenerateMaximumProjectionJob(
+      app.params.source_image_prefix,
+      app.params.destination
+    ).run()
+  except Exception as exception:
+    traceback.print_exc()
 
 generate_maximum_projection_cli.add_param("source_image_prefix")
 generate_maximum_projection_cli.add_param("destination")

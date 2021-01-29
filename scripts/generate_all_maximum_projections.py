@@ -18,7 +18,7 @@ class GenerateAllMaximumProjectionsJob:
     self.job_name = "generate_all_maximum_projections_%s" % datetime.now().strftime("%Y%m%d%H%M%S")
     self.logger = logging.getLogger()
   
-  def start(self):
+  def run(self):
     self.generate_swarm_file()
     self.submit_swarm_job()
     while not self.is_swarm_job_complete():
@@ -72,7 +72,7 @@ def generate_all_maximum_projections_cli(app):
     GenerateAllMaximumProjectionsJob(
       app.params.source,
       app.params.destination
-    ).start()
+    ).run()
   except Exception as exception:
     traceback.print_exc()
 

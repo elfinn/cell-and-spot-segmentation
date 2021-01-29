@@ -8,8 +8,8 @@ import subprocess
 from time import sleep
 import re
 
-SWARM_FILE_GLOB = "*.c01.tiff"
-SWARM_FILE_PREFIX_RE = re.compile("\\.c01\\.tiff$")
+IMAGE_FILES_GLOB = "*.c01.tiff"
+IMAGE_FILE_PREFIX_RE = re.compile("\\.c01\\.tiff$")
 
 class GenerateAllMaximumProjectionsJob:
   def __init__(self, source, destination):
@@ -26,8 +26,8 @@ class GenerateAllMaximumProjectionsJob:
 
   def generate_swarm_file(self):
     with self.swarm_file_path.open("w") as swarm_file:
-        for image_file in self.source_path.glob("*.c01.tiff"):
-          image_file_prefix = SWARM_FILE_PREFIX_RE.sub("", str(image_file))
+        for image_file in self.source_path.glob(IMAGE_FILES_GLOB):
+          image_file_prefix = IMAGE_FILE_PREFIX_RE.sub("", str(image_file))
           swarm_file.write("%s\n" % generate_maximum_projection_cli_str(image_file_prefix, self.destination))
   
   def submit_swarm_job(self):

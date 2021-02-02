@@ -2,7 +2,7 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 import cli.log
-import logging
+import loggings
 from generate_maximum_projection import generate_maximum_projection_cli_str
 import subprocess
 from time import sleep

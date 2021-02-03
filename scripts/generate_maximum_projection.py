@@ -24,10 +24,6 @@ class GenerateMaximumProjectionJob:
       self.logger.warning("Z-slice %s", img.z)
 
     # read all the images & append to numpy array
-
-
-      
-
     # maximially project them
     # compute the z-axis distance distribution
     # serialize it all out, probably via `numpy.save(Path(self.destination) / ("%_maximal_projection.npy" % self.source_image_prefix))`

@@ -16,25 +16,8 @@ class GenerateMaximumProjectionJob:
     self.logger = logging.getLogger()
 
   def run(self):
-    # find all the images
-    for f in self.source_file_paths:
-      img = ZSlicedImage(f)
-      #printMyImage = plt.imshow(img.numpy_array)
-      #plt.show()
-      self.logger.warning("Z-slice %s", img.z)
-      
-    # maximially project them
-    MIPToPrint = plt.imshow(self.MaxProj)
-    plt.show()
-
-    # compute the z-axis distance distribution
-    WeightedCenterToPrint = plt.imshow(self.WeightedCenter)
-    plt.show()
-    
-    # serialize it all out, probably via `numpy.save(Path(self.destination) / ("%_maximal_projection.npy" % self.source_image_prefix))`
-    
-    
-    pass
+    plt.imsave(str(self.destination_path / self.maximum_projection_destination_filename), self.maximum_projection, cmap="Greys")
+    numpy.save(self.destination_path / self.weighted_center_destination_filename, self.weighted_center)
 
   @property
   def destination_path(self):
@@ -59,26 +42,66 @@ class GenerateMaximumProjectionJob:
     return self.source_directory_path.glob(self.source_file_pattern)
 
   @property
-  def MaxProj(self):
-    if not hasattr(self, "_MaxProj"):
-      self._MaxProj = numpy.empty((1998, 1998))
-      for f in self.source_file_paths:
-        img = ZSlicedImage(f)
-        self._MaxProj = numpy.fmax(self._MaxProj, img.numpy_array)
-    return self._MaxProj
+  def maximum_projection(self):
+    if not hasattr(self, "_maximum_projection"):
+      self.process_source_z_sliced_images()
+    return self._maximum_projection
 
   @property
-  def WeightedCenter(self):
-    if not hasattr(self, "_WeightedCenter"):
-      summedValues = numpy.empty((1998, 1998))
-      weightedSummedValues = numpy.empty((1998,1998))
-      for f in self.source_file_paths:
-        img = ZSlicedImage(f)
-        summedValues = summedValues + img.numpy_array
-        weightedSummedValues = weightedSummedValues + img.z*img.numpy_array
-      self._WeightedCenter = weightedSummedValues/summedValues
-      return self._WeightedCenter
+  def weighted_center(self):
+    if not hasattr(self, "_weighted_center"):
+      self.process_source_z_sliced_images()
+    return self._weighted_center
 
+  def process_source_z_sliced_images(self):
+    if hasattr(self, "_weighted_center") or hasattr(self, "_maximum_projection"):
+      raise Exception("already computed")
+
+    shaped = False
+    maximum_projection = None
+    summed_values = None
+    weighted_summed_values = None
+    for source_z_sliced_image in self.source_z_sliced_images:
+      if not shaped:
+        shaped = True
+        shape = numpy.shape(source_z_sliced_image.numpy_array)
+        maximum_projection = numpy.empty(shape)
+        summed_values = numpy.empty(shape)
+        weighted_summed_values = numpy.empty(shape)
+      
+      maximum_projection = numpy.fmax(maximum_projection, source_z_sliced_image.numpy_array)
+      summed_values = summed_values + source_z_sliced_image.numpy_array
+      weighted_summed_values = weighted_summed_values + (source_z_sliced_image.numpy_array * source_z_sliced_image.z)
+
+    summed_values = numpy.fmax(summed_values, numpy.ones_like(summed_values))
+    self._maximum_projection = maximum_projection
+    self._weighted_center = weighted_summed_values/summed_values
+
+  @property
+  def source_z_sliced_images(self):
+    return (ZSlicedImage(source_file_path) for source_file_path in self.source_file_paths)
+
+  @property
+  def destination_path(self):
+    if not hasattr(self, "_destination_path"):
+      self._destination_path = Path(self.destination)
+      if not self._destination_path.exists():
+        Path.mkdir(self._destination_path, parents=True)
+      elif not self._destination_path.is_dir():
+        raise Exception("destination already exists, but is not a directory")
+    return self._destination_path
+
+  @property
+  def destination_filename_prefix(self):
+    return Path(self.source_file_pattern.replace("?", "X")).stem
+  
+  @property
+  def maximum_projection_destination_filename(self):
+    return "%s%s" % (self.destination_filename_prefix, "_maximum_projection.png")
+
+  @property
+  def weighted_center_destination_filename(self):
+    return "%s%s" % (self.destination_filename_prefix, "_weighted_center.npy")
 
 class ZSlicedImage:
   def __init__(self, path):
@@ -106,10 +129,6 @@ class ZSlicedImage:
       self._z = int(match[1])
     return self._z
 
-
-
-
-
 def generate_maximum_projection_cli_str(source_image_prefix, destination):
   # TODO: not sure this file will be in the path in swarm. might need to configure the swarm env?
   return "pipenv run python %s %s %s" % (__file__, source_image_prefix, destination)
@@ -135,5 +154,11 @@ if __name__ == "__main__":
       "Plate1_12-30-20_18-38-45_B02_T0001F001L01A02Z??C01.tif",
       "C:\\Users\\finne\\Desktop\\output\\"
     ).run()
+    # GenerateMaximumProjectionJob(
+    #   "/Users/kevin/Dropbox/TestImages/MiniPlate",
+    #   "Plate1_12-30-20_18-38-45_B02_T0001F001L01A02Z??C01.tif",
+    #   "/Users/kevin/Desktop/maximum_projection_output"
+    # ).run()
   except Exception as exception:
     traceback.print_exc()
+

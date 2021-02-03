@@ -19,14 +19,21 @@ class GenerateMaximumProjectionJob:
     # find all the images
     for f in self.source_file_paths:
       img = ZSlicedImage(f)
-      printMyImage = plt.imshow(img.numpy_array)
-      plt.show()
+      #printMyImage = plt.imshow(img.numpy_array)
+      #plt.show()
       self.logger.warning("Z-slice %s", img.z)
-
-    # read all the images & append to numpy array
+      
     # maximially project them
+    MIPToPrint = plt.imshow(self.MaxProj)
+    plt.show()
+
     # compute the z-axis distance distribution
+    WeightedCenterToPrint = plt.imshow(self.WeightedCenter)
+    plt.show()
+    
     # serialize it all out, probably via `numpy.save(Path(self.destination) / ("%_maximal_projection.npy" % self.source_image_prefix))`
+    
+    
     pass
 
   @property
@@ -49,9 +56,29 @@ class GenerateMaximumProjectionJob:
 
   @property
   def source_file_paths(self):
-    if not hasattr(self, "_source_file_paths"):
-      self._source_file_paths = self.source_directory_path.glob(self.source_file_pattern)
-    return self._source_file_paths
+    return self.source_directory_path.glob(self.source_file_pattern)
+
+  @property
+  def MaxProj(self):
+    if not hasattr(self, "_MaxProj"):
+      self._MaxProj = numpy.empty((1998, 1998))
+      for f in self.source_file_paths:
+        img = ZSlicedImage(f)
+        self._MaxProj = numpy.fmax(self._MaxProj, img.numpy_array)
+    return self._MaxProj
+
+  @property
+  def WeightedCenter(self):
+    if not hasattr(self, "_WeightedCenter"):
+      summedValues = numpy.empty((1998, 1998))
+      weightedSummedValues = numpy.empty((1998,1998))
+      for f in self.source_file_paths:
+        img = ZSlicedImage(f)
+        summedValues = summedValues + img.numpy_array
+        weightedSummedValues = weightedSummedValues + img.z*img.numpy_array
+      self._WeightedCenter = weightedSummedValues/summedValues
+      return self._WeightedCenter
+
 
 class ZSlicedImage:
   def __init__(self, path):

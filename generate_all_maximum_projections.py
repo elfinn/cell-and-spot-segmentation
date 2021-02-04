@@ -29,7 +29,7 @@ class GenerateAllMaximumProjectionsJob:
         swarm_file.write("%s\n" % generate_maximum_projection_cli_str(self.source, image_filename_constraint, self.destination))
   
   def submit_swarm_job(self):
-    subprocess.run("swarm -f %s --job-name %s" % (self.swarm_file_path, self.job_name)).check_returncode()
+    subprocess.run("swarm -f %s --module python/3.8 --job-name %s" % (self.swarm_file_path, self.job_name)).check_returncode()
 
   def is_swarm_job_complete(self):
     sjobs_result = subprocess.run("squeue -n %s -o \"%T\"" % self.job_name)

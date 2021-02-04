@@ -22,7 +22,9 @@ class GenerateAllMaximumProjectionsJob:
     self.generate_swarm_file()
     self.submit_swarm_job()
     while not self.is_swarm_job_complete():
+      self.logger.warning("job not complete yet")
       sleep(5)
+    self.logger.warning("complete")
 
   def generate_swarm_file(self):
     with self.swarm_file_path.open("w") as swarm_file:
@@ -30,6 +32,7 @@ class GenerateAllMaximumProjectionsJob:
         swarm_file.write("%s\n" % generate_maximum_projection_cli_str(self.source, image_filename_constraint, self.destination))
   
   def submit_swarm_job(self):
+    self.logger.warning("swarm -f %s --module python/3.8 --job-name %s -b %i", self.swarm_file_path, self.job_name, math.ceil(len(self.distinct_image_filename_constraints) / 5))
     subprocess.run(
       "swarm -f %s --module python/3.8 --job-name %s -b %i" % (
         self.swarm_file_path,
@@ -40,8 +43,10 @@ class GenerateAllMaximumProjectionsJob:
 
   def is_swarm_job_complete(self):
     sjobs_result = subprocess.run("squeue -n %s -o \"%T\" -t all -h" % self.job_name, capture_output=True, text=True)
+    self.logger.warning("squeue -n %s -o \"%T\" -t all -h", self.job_name)
     sjobs_result.check_returncode()
     result_lines = sjobs_result.stdout.splitlines()
+    self.logger.warning("squeue result: %s", sjobs_result.stdout)
     return (
       len(result_lines) == len(self.distinct_image_filename_constraints) and
       all((result_line == "COMPLETED" for result_line in result_lines))

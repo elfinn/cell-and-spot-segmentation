@@ -1,3 +1,4 @@
+import math
 import traceback
 from datetime import datetime
 from pathlib import Path
@@ -29,16 +30,22 @@ class GenerateAllMaximumProjectionsJob:
         swarm_file.write("%s\n" % generate_maximum_projection_cli_str(self.source, image_filename_constraint, self.destination))
   
   def submit_swarm_job(self):
-    subprocess.run("swarm -f %s --module python/3.8 --job-name %s" % (self.swarm_file_path, self.job_name)).check_returncode()
+    subprocess.run(
+      "swarm -f %s --module python/3.8 --job-name %s -b %i" % (
+        self.swarm_file_path,
+        self.job_name,
+        math.ceil(len(self.distinct_image_filename_constraints) / 5)
+      )
+    ).check_returncode()
 
   def is_swarm_job_complete(self):
-    sjobs_result = subprocess.run("squeue -n %s -o \"%T\"" % self.job_name)
+    sjobs_result = subprocess.run("squeue -n %s -o \"%T\" -t all -h" % self.job_name, capture_output=True, text=True)
     sjobs_result.check_returncode()
-    # heavy assumptions here:
-    # - sjobs will only include our one job line, no others
-    # - sjobs will return our line when it's completed
-    # - sjobs outputs to stdout
-    return sjobs_result.stdout.find("COMPLETED") != -1
+    result_lines = sjobs_result.stdout.splitlines()
+    return (
+      len(result_lines) == len(self.distinct_image_filename_constraints) and
+      all((result_line == "COMPLETED" for result_line in result_lines))
+    )
 
   @property
   def swarm_file_path(self):

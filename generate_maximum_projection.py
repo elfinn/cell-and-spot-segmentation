@@ -7,11 +7,12 @@ import scipy
 from PIL import Image
 import matplotlib.pyplot as plt
 import re
+from models.image_filename import ImageFilename
 
 class GenerateMaximumProjectionJob:
-  def __init__(self, source_directory, source_file_pattern, destination):
+  def __init__(self, source_directory, filename_pattern, destination):
     self.source_directory = source_directory
-    self.source_file_pattern = source_file_pattern
+    self.filename_pattern = filename_pattern
     self.destination = destination
     self.logger = logging.getLogger()
 
@@ -39,7 +40,7 @@ class GenerateMaximumProjectionJob:
 
   @property
   def source_file_paths(self):
-    return self.source_directory_path.glob(self.source_file_pattern)
+    return self.source_directory_path.glob(self.filename_pattern)
 
   @property
   def maximum_projection(self):
@@ -93,7 +94,7 @@ class GenerateMaximumProjectionJob:
 
   @property
   def destination_filename_prefix(self):
-    return Path(self.source_file_pattern.replace("?", "X")).stem
+    return Path(self.filename_pattern.replace("?", "X")).stem
   
   @property
   def maximum_projection_destination_filename(self):
@@ -122,43 +123,39 @@ class ZSlicedImage:
   @property
   def z(self):
     if not hasattr(self, "_z"):
-      pattern = re.compile('Z(\\d\\d)C\\d\\d\\.tif$')
-      match = pattern.search(str(self.path))
-      if not match:
-        raise Exception("Cannot find Z position") 
-      self._z = int(match[1])
+      image_filename = ImageFilename(self.path.name)
+      self._z = image_filename.z
     return self._z
 
-def generate_maximum_projection_cli_str(source_image_prefix, destination):
+def generate_maximum_projection_cli_str(source_directory, filename_pattern, destination):
   # TODO: not sure this file will be in the path in swarm. might need to configure the swarm env?
-  return "pipenv run python %s %s %s" % (__file__, source_image_prefix, destination)
+  return "pipenv run python %s '%s' '%s' '%s'" % (__file__, source_directory, filename_pattern, destination)
 
 @cli.log.LoggingApp
 def generate_maximum_projection_cli(app):
   try:
     GenerateMaximumProjectionJob(
-      app.params.source_image_prefix,
+      app.params.source_directory,
+      app.params.filename_pattern,
       app.params.destination
     ).run()
   except Exception as exception:
     traceback.print_exc()
 
-generate_maximum_projection_cli.add_param("source_image_prefix")
-generate_maximum_projection_cli.add_param("destination")
+generate_maximum_projection_cli.add_param(
+  "source_directory",
+  default="C:\\Users\\finne\\Desktop\\hesc-chr1-fish-btoa_20201230_183248\\Plate1_12-30-20_18-38-45\\"
+  # default="/Users/kevin/Dropbox/TestImages/MiniPlate"
+)
+generate_maximum_projection_cli.add_param(
+  "filename_pattern",
+  default="Plate1_12-30-20_18-38-45_B02_T0001F001L01A02Z??C01.tif"
+)
+generate_maximum_projection_cli.add_param(
+  "destination",
+  default="C:\\Users\\finne\\Desktop\\output\\"
+  # default="/Users/kevin/Desktop/maximum_projection_output"
+)
 
 if __name__ == "__main__":
-  #  generate_maximum_projection_cli.run()
-  try:
-    GenerateMaximumProjectionJob(
-      "C:\\Users\\finne\\Desktop\\hesc-chr1-fish-btoa_20201230_183248\\Plate1_12-30-20_18-38-45\\",
-      "Plate1_12-30-20_18-38-45_B02_T0001F001L01A02Z??C01.tif",
-      "C:\\Users\\finne\\Desktop\\output\\"
-    ).run()
-    # GenerateMaximumProjectionJob(
-    #   "/Users/kevin/Dropbox/TestImages/MiniPlate",
-    #   "Plate1_12-30-20_18-38-45_B02_T0001F001L01A02Z??C01.tif",
-    #   "/Users/kevin/Desktop/maximum_projection_output"
-    # ).run()
-  except Exception as exception:
-    traceback.print_exc()
-
+   generate_maximum_projection_cli.run()

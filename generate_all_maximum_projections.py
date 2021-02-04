@@ -2,15 +2,14 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 import cli.log
-import loggings
+import logging
 from generate_maximum_projection import generate_maximum_projection_cli_str
 import subprocess
 from time import sleep
 import re
 
-IMAGE_FILES_GLOB = "*.c01.tiff"
-IMAGE_FILE_PREFIX_RE = re.compile("\\.c01\\.tiff$")
-
+from models.image_filename import *
+from models.image_filename_constraint import *
 class GenerateAllMaximumProjectionsJob:
   def __init__(self, source, destination):
     self.source = source
@@ -26,9 +25,8 @@ class GenerateAllMaximumProjectionsJob:
 
   def generate_swarm_file(self):
     with self.swarm_file_path.open("w") as swarm_file:
-        for image_file in self.source_path.glob(IMAGE_FILES_GLOB):
-          image_file_prefix = IMAGE_FILE_PREFIX_RE.sub("", str(image_file))
-          swarm_file.write("%s\n" % generate_maximum_projection_cli_str(image_file_prefix, self.destination))
+      for image_filename_constraint in self.distinct_image_filename_constraints:
+        swarm_file.write("%s\n" % generate_maximum_projection_cli_str(self.source, image_filename_constraint, self.destination))
   
   def submit_swarm_job(self):
     subprocess.run("swarm -f %s --job-name %s" % (self.swarm_file_path, self.job_name)).check_returncode()
@@ -65,6 +63,22 @@ class GenerateAllMaximumProjectionsJob:
       elif not self._destination_path.is_dir():
         raise Exception("destination already exists, but is not a directory")
     return self._destination_path
+  
+  @property
+  def image_file_paths(self):
+    return self.source_path.glob(IMAGE_FILE_GLOB)
+
+  @property
+  def image_filenames(self):
+    return (ImageFilename(image_file_path.name) for image_file_path in self.image_file_paths)
+
+  @property
+  def distinct_image_filename_constraints(self):
+    if not hasattr(self, "_distinct_image_filename_constraints"):
+      self._distinct_image_filename_constraints = set((
+        ImageFilenameConstraint.from_image_filename(image_filename, excluding_keys=["z"]) for image_filename in self.image_filenames
+      ))
+    return self._distinct_image_filename_constraints
 
 @cli.log.LoggingApp
 def generate_all_maximum_projections_cli(app):

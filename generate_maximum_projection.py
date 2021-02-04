@@ -76,7 +76,7 @@ class GenerateMaximumProjectionJob:
 
     summed_values = numpy.fmax(summed_values, numpy.ones_like(summed_values))
     self._maximum_projection = maximum_projection
-    self._weighted_center = weighted_summed_values/summed_values
+    self._weighted_center = (weighted_summed_values/summed_values).astype(numpy.float16)
 
   @property
   def source_z_sliced_images(self):
@@ -142,20 +142,9 @@ def generate_maximum_projection_cli(app):
   except Exception as exception:
     traceback.print_exc()
 
-generate_maximum_projection_cli.add_param(
-  "source_directory",
-  default="C:\\Users\\finne\\Desktop\\hesc-chr1-fish-btoa_20201230_183248\\Plate1_12-30-20_18-38-45\\"
-  # default="/Users/kevin/Dropbox/TestImages/MiniPlate"
-)
-generate_maximum_projection_cli.add_param(
-  "filename_pattern",
-  default="Plate1_12-30-20_18-38-45_B02_T0001F001L01A02Z??C01.tif"
-)
-generate_maximum_projection_cli.add_param(
-  "destination",
-  default="C:\\Users\\finne\\Desktop\\output\\"
-  # default="/Users/kevin/Desktop/maximum_projection_output"
-)
+generate_maximum_projection_cli.add_param("source_directory")
+generate_maximum_projection_cli.add_param("filename_pattern")
+generate_maximum_projection_cli.add_param("destination")
 
 if __name__ == "__main__":
    generate_maximum_projection_cli.run()

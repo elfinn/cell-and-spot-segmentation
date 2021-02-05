@@ -50,10 +50,10 @@ class GenerateAllMaximumProjectionsJob:
     sjobs_result = subprocess.run(command, capture_output=True, text=True)
     sjobs_result.check_returncode()
     result_lines = sjobs_result.stdout.splitlines()
-    self.logger.warning("squeue result: %s", sjobs_result.stdout)
+    self.logger.warning("squeue result: %s", result_lines)
     return (
       len(result_lines) == SWARM_SUBJOBS_COUNT and
-      all((result_line == "COMPLETED" for result_line in result_lines))
+      all(("COMPLETED" in result_line for result_line in result_lines))
     )
 
   @property

@@ -43,9 +43,9 @@ class GenerateAllMaximumProjectionsJob:
     subprocess.run(command).check_returncode()
 
   def is_swarm_job_complete(self):
-    command = ["squeue", "-n", self.name, "-o", "\"%T\"", "-t", "all", "-h"]
-    sjobs_result = subprocess.run(command, capture_output=True, text=True)
+    command = ["squeue", "-n", self.job_name, "-o", "\"%T\"", "-t", "all", "-h"]
     self.logger.warning(command)
+    sjobs_result = subprocess.run(command, capture_output=True, text=True)
     sjobs_result.check_returncode()
     result_lines = sjobs_result.stdout.splitlines()
     self.logger.warning("squeue result: %s", sjobs_result.stdout)

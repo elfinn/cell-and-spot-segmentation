@@ -11,26 +11,54 @@ import re
 
 from models.image_filename import *
 from models.image_filename_constraint import *
-from models.swarm_job import SwarmJob
+
 class GenerateAllMaximumProjectionsJob:
   def __init__(self, source, destination):
     self.source = source
     self.destination = destination
-    self.job_name = "generate_all_maximum_projections_%s" % datetime.now().strftime("%Y%m%d%H%M%S")
     self.logger = logging.getLogger()
   
   def run(self):
     self.generate_swarm_file()
-    SwarmJob(
-      self.swarm_file_path,
-      self.job_name,
-      bundle=math.ceil(len(self.distinct_image_filename_constraints) / 5)
-    ).run()
+    self.start_swarm_job()
+    while not self.is_swarm_job_complete():
+      self.logger.warning("job not complete yet")
+      sleep(5)
+    self.logger.warning("complete")
 
   def generate_swarm_file(self):
     with self.swarm_file_path.open("w") as swarm_file:
       for image_filename_constraint in self.distinct_image_filename_constraints:
         swarm_file.write("%s\n" % generate_maximum_projection_cli_str(self.source, image_filename_constraint, self.destination))
+
+  def start_swarm_job(self):
+    command = [
+      "swarm",
+      "--module", "python/3.8",
+      "-f", self.swarm_file_path,
+      "--job-name", self.job_name,
+      "-b", str(math.ceil(len(self.distinct_image_filename_constraints) / 5))
+    ]
+    self.logger.warning(command)
+    subprocess.run(command).check_returncode()
+
+  def is_swarm_job_complete(self):
+    command = ["squeue", "-n", self.name, "-o", "\"%T\"", "-t", "all", "-h"]
+    sjobs_result = subprocess.run(command, capture_output=True, text=True)
+    self.logger.warning(command)
+    sjobs_result.check_returncode()
+    result_lines = sjobs_result.stdout.splitlines()
+    self.logger.warning("squeue result: %s", sjobs_result.stdout)
+    return (
+      len(result_lines) == len(self.distinct_image_filename_constraints) and
+      all((result_line == "COMPLETED" for result_line in result_lines))
+    )
+
+  @property
+  def job_name(self):
+    if not hasattr(self, "_job_name"):
+      self._job_name = "generate_all_maximum_projections_%s" % datetime.now().strftime("%Y%m%d%H%M%S")
+    return self._job_name
   
   @property
   def swarm_file_path(self):

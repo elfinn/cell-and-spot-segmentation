@@ -12,6 +12,8 @@ import re
 from models.image_filename import *
 from models.image_filename_constraint import *
 
+SWARM_SUBJOBS_COUNT = 5
+
 class GenerateAllMaximumProjectionsJob:
   def __init__(self, source, destination):
     self.source = source
@@ -37,7 +39,7 @@ class GenerateAllMaximumProjectionsJob:
       "--module", "python/3.8",
       "-f", self.swarm_file_path,
       "--job-name", self.job_name,
-      "-b", str(math.ceil(len(self.distinct_image_filename_constraints) / 5))
+      "-b", str(math.ceil(len(self.distinct_image_filename_constraints) / SWARM_SUBJOBS_COUNT))
     ]
     self.logger.warning(command)
     subprocess.run(command).check_returncode()
@@ -50,7 +52,7 @@ class GenerateAllMaximumProjectionsJob:
     result_lines = sjobs_result.stdout.splitlines()
     self.logger.warning("squeue result: %s", sjobs_result.stdout)
     return (
-      len(result_lines) == len(self.distinct_image_filename_constraints) and
+      len(result_lines) == SWARM_SUBJOBS_COUNT and
       all((result_line == "COMPLETED" for result_line in result_lines))
     )
 

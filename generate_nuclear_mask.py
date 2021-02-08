@@ -21,6 +21,7 @@ class GenerateNuclearMaskJob:
     # load maximum projection image
     # run cellpose on it with parameters???
     # iterate over masks and output to disk
+    model.eval([self.image, ...], ...)
     pass
 
   @property
@@ -52,6 +53,12 @@ class GenerateNuclearMaskJob:
     if not hasattr(self, "_cellpose_result"):
       model = models.Cellpose(model_type='nuclei')
       self._cellpose_result = model.eval(self.image, self.diameter, 0)
+
+def generate_nuclear_mask_cli_str(source, destination, diameter):
+  result = "pipenv run python %s '%s' '%s'" % (__file__, source, destination)
+  if diameter:
+    result = "%s --diameter %i" % (result, diameter)
+  return result
 
 @cli.log.LoggingApp
 def generate_nuclear_mask_cli(app):

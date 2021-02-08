@@ -11,6 +11,7 @@ import re
 
 from models.image_filename import *
 from models.image_filename_constraint import *
+from models.swarm_job import SwarmJob
 
 SWARM_SUBJOBS_COUNT = 5
 
@@ -21,52 +22,30 @@ class GenerateAllMaximumProjectionsJob:
     self.logger = logging.getLogger()
   
   def run(self):
-    self.generate_swarm_file()
-    self.start_swarm_job()
-    while not self.is_swarm_job_complete():
-      self.logger.warning("job not complete yet")
-      sleep(5)
-    self.logger.warning("complete")
+    SwarmJob(
+      self.destination_path,
+      self.job_name,
+      self.jobs,
+      SWARM_SUBJOBS_COUNT
+    ).run()
 
-  def generate_swarm_file(self):
-    with self.swarm_file_path.open("w") as swarm_file:
-      for image_filename_constraint in self.distinct_image_filename_constraints:
-        swarm_file.write("%s\n" % generate_maximum_projection_cli_str(self.source, image_filename_constraint, self.destination))
+  @property
+  def jobs(self):
+    if not hasattr(self, "_jobs"):
+      self._jobs = [
+        generate_maximum_projection_cli_str(self.source, image_filename_constraint, self.destination) for image_filename_constraint in self.distinct_image_filename_constraints
+      ]
+    return self._jobs
 
-  def start_swarm_job(self):
-    command = [
-      "swarm",
-      "--module", "python/3.8",
-      "-f", self.swarm_file_path,
-      "--job-name", self.job_name,
-      "-b", str(math.ceil(len(self.distinct_image_filename_constraints) / SWARM_SUBJOBS_COUNT))
-    ]
-    self.logger.warning(command)
-    subprocess.run(command).check_returncode()
-
-  def is_swarm_job_complete(self):
-    command = ["squeue", "-n", self.job_name, "-o", "%T", "-t", "all", "-h"]
-    self.logger.warning(command)
-    sjobs_result = subprocess.run(command, capture_output=True, text=True)
-    sjobs_result.check_returncode()
-    result_lines = sjobs_result.stdout.splitlines()
-    self.logger.warning("squeue result: %s", result_lines)
-    return (
-      len(result_lines) == SWARM_SUBJOBS_COUNT and
-      all((result_line == "COMPLETED" for result_line in result_lines))
-    )
+  @property
+  def jobs(self):
+    
 
   @property
   def job_name(self):
     if not hasattr(self, "_job_name"):
       self._job_name = "generate_all_maximum_projections_%s" % datetime.now().strftime("%Y%m%d%H%M%S")
     return self._job_name
-  
-  @property
-  def swarm_file_path(self):
-    if not hasattr(self, "_swarm_file_path"):
-      self._swarm_file_path = self.destination_path / "generate_all_maximum_projections.swarm"
-    return self._swarm_file_path
   
   @property
   def source_path(self):

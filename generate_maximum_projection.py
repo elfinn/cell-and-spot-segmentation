@@ -7,6 +7,7 @@ import scipy
 from PIL import Image
 import matplotlib.pyplot as plt
 import re
+
 from models.image_filename import ImageFilename
 
 class GenerateMaximumProjectionJob:
@@ -128,7 +129,6 @@ class ZSlicedImage:
     return self._z
 
 def generate_maximum_projection_cli_str(source_directory, filename_pattern, destination):
-  # TODO: not sure this file will be in the path in swarm. might need to configure the swarm env?
   return "pipenv run python %s '%s' '%s' '%s'" % (__file__, source_directory, filename_pattern, destination)
 
 @cli.log.LoggingApp

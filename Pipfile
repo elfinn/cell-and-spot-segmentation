@@ -9,6 +9,7 @@ numpy = "*"
 pillow = "*"
 scipy = "*"
 matplotlib = "*"
+scikit-image = "*"
 
 [dev-packages]
 

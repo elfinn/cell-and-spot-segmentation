@@ -5,6 +5,7 @@ import traceback
 import numpy
 import scipy
 import skimage.io
+import skimage.segmentation
 import matplotlib.pyplot as plt
 import re
 from models.image_filename import ImageFilename
@@ -18,7 +19,7 @@ class GenerateNuclearMaskJob:
     self.logger = logging.getLogger()
 
   def run(self):
-    numpy.save(self.destination_filename, self.cellpose_result[0])
+    numpy.save(self.destination_filename, self.cellpose_filtered)
 
   @property
   def destination_path(self):
@@ -56,6 +57,13 @@ class GenerateNuclearMaskJob:
       model = models.Cellpose(model_type = "nuclei")
       self._cellpose_result = model.eval(self.image, diameter=self.diameter, channels=[[0,0]], invert=True)
     return self._cellpose_result
+
+  @property
+  def cellpose_filtered(self):
+    if not hasattr(self, "_cellpose_filtered"):
+      dilated = skimage.segmentation.expand_labels(self.cellpose_result[0], distance=1)
+      self._cellpose_filtered = skimage.segmentation.clear_border(dilated)
+  
 
 def generate_nuclear_mask_cli_str(source, destination, diameter):
   result = "pipenv run python %s '%s' '%s'" % (__file__, source, destination)

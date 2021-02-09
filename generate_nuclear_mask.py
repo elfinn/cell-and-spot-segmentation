@@ -8,7 +8,7 @@ import skimage.io
 import matplotlib.pyplot as plt
 import re
 from models.image_filename import ImageFilename
-from cellpose import models
+from cellpose import models, plot
 
 class GenerateNuclearMaskJob:
   def __init__(self, source, destination, diameter):
@@ -18,10 +18,26 @@ class GenerateNuclearMaskJob:
     self.logger = logging.getLogger()
 
   def run(self):
-    # load maximum projection image
-    # run cellpose on it with parameters???
-    # iterate over masks and output to disk
-    pass
+    # plot image with masks overlaid
+    overlaid_image = plot.mask_overlay(
+      self.image,
+      self.cellpose_result[0],
+    )
+    plt.imshow(overlaid_image)
+    plt.show()
+    import pdb;pdb.set_trace() 
+
+    # # plot image with outlines overlaid in red
+    # outlines = plot.outlines_list(self.cellpose_result['masks'])
+    # plt.imshow(self.cellpose_result['img'])
+    # for o in outlines:
+    #     plt.plot(o[:,0], o[:,1], color='r')
+
+    # for mask in self.cellpose_result:
+      # either use masks (cellpose) or labels (scikit)
+      # expand_labels to dilate the masks by 1px
+      # clear_border to effectively filter out masks touching the edge
+      # pass
 
   @property
   def destination_path(self):
@@ -51,7 +67,8 @@ class GenerateNuclearMaskJob:
   def cellpose_result(self):
     if not hasattr(self, "_cellpose_result"):
       model = models.Cellpose(model_type='nuclei')
-      self._cellpose_result = model.eval(self.image, self.diameter, 0)
+      self._cellpose_result = model.eval(self.image, self.diameter, [[0,0]], invert=True)
+    return self._cellpose_result
 
 def generate_nuclear_mask_cli_str(source, destination, diameter):
   result = "pipenv run python %s '%s' '%s'" % (__file__, source, destination)

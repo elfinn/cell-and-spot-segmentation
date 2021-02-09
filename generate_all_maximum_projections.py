@@ -40,7 +40,6 @@ class GenerateAllMaximumProjectionsJob:
   @property
   def jobs(self):
     return [generate_maximum_projection_cli_str(self.source, image_filename_constraint, self.destination) for image_filename_constraint in self.distinct_image_filename_constraints]
-    
 
   @property
   def job_name(self):

@@ -3,12 +3,10 @@ import logging
 from pathlib import Path
 import traceback
 import numpy
-import scipy
-from PIL import Image
 import matplotlib.pyplot as plt
 import re
 
-from models.image_filename import ImageFilename
+from models.z_sliced_image import ZSlicedImage
 
 class GenerateMaximumProjectionJob:
   def __init__(self, source_directory, filename_pattern, destination):
@@ -104,29 +102,6 @@ class GenerateMaximumProjectionJob:
   @property
   def weighted_center_destination_filename(self):
     return "%s%s" % (self.destination_filename_prefix, "_weighted_center.npy")
-
-class ZSlicedImage:
-  def __init__(self, path):
-    self.path = path
-
-  @property
-  def image(self):
-    if not hasattr(self, "_image"):
-      self._image = Image.open(self.path)
-    return self._image
-
-  @property
-  def numpy_array(self):
-    if not hasattr(self, "_numpy_array"):
-      self._numpy_array = numpy.asarray(self.image)
-    return self._numpy_array
-
-  @property
-  def z(self):
-    if not hasattr(self, "_z"):
-      image_filename = ImageFilename(self.path.name)
-      self._z = image_filename.z
-    return self._z
 
 def generate_maximum_projection_cli_str(source_directory, filename_pattern, destination):
   return "pipenv run python %s '%s' '%s' '%s'" % (__file__, source_directory, filename_pattern, destination)

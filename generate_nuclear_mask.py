@@ -8,7 +8,7 @@ import skimage.io
 import matplotlib.pyplot as plt
 import re
 from models.image_filename import ImageFilename
-from cellpose import models, plot
+from cellpose import models, plot, transforms
 
 class GenerateNuclearMaskJob:
   def __init__(self, source, destination, diameter):
@@ -25,7 +25,6 @@ class GenerateNuclearMaskJob:
     )
     plt.imshow(overlaid_image)
     plt.show()
-    import pdb;pdb.set_trace() 
 
     # # plot image with outlines overlaid in red
     # outlines = plot.outlines_list(self.cellpose_result['masks'])
@@ -66,8 +65,8 @@ class GenerateNuclearMaskJob:
   @property
   def cellpose_result(self):
     if not hasattr(self, "_cellpose_result"):
-      model = models.Cellpose(model_type='nuclei')
-      self._cellpose_result = model.eval(self.image, self.diameter, [[0,0]], invert=True)
+      model = models.Cellpose(model_type = "nuclei")
+      self._cellpose_result = model.eval(self.image, diameter=self.diameter, channels=[[0,0]], invert=True)
     return self._cellpose_result
 
 def generate_nuclear_mask_cli_str(source, destination, diameter):
@@ -89,7 +88,7 @@ def generate_nuclear_mask_cli(app):
 
 generate_nuclear_mask_cli.add_param("source", default="C:\\\\Users\\finne\\Documents\\python\\MaxProjections\\AssayPlate_PerkinElmer_CellCarrier-384_B07_T0001F009L01A01ZXXC01_maximum_projection.png", nargs="?")
 generate_nuclear_mask_cli.add_param("destination", default="C:\\\\Users\\finne\\Documents\\python\\NucMasks", nargs="?")
-generate_nuclear_mask_cli.add_param("--diameter", type=int)
+generate_nuclear_mask_cli.add_param("--diameter", type=int, default=100)
 
 if __name__ == "__main__":
    generate_nuclear_mask_cli.run()

@@ -18,25 +18,7 @@ class GenerateNuclearMaskJob:
     self.logger = logging.getLogger()
 
   def run(self):
-    # plot image with masks overlaid
-    overlaid_image = plot.mask_overlay(
-      self.image,
-      self.cellpose_result[0],
-    )
-    plt.imshow(overlaid_image)
-    plt.show()
-
-    # # plot image with outlines overlaid in red
-    # outlines = plot.outlines_list(self.cellpose_result['masks'])
-    # plt.imshow(self.cellpose_result['img'])
-    # for o in outlines:
-    #     plt.plot(o[:,0], o[:,1], color='r')
-
-    # for mask in self.cellpose_result:
-      # either use masks (cellpose) or labels (scikit)
-      # expand_labels to dilate the masks by 1px
-      # clear_border to effectively filter out masks touching the edge
-      # pass
+    numpy.save(self.destination_filename, self.cellpose_result[0])
 
   @property
   def destination_path(self):
@@ -47,6 +29,12 @@ class GenerateNuclearMaskJob:
       elif not self._destination_path.is_dir():
         raise Exception("destination already exists, but is not a directory")
     return self._destination_path
+
+  @property
+  def destination_filename(self):
+    if not hasattr(self, "_destination_filename"):
+      self._destination_filename = self.destination_path / ("%s_nuclear_masks.npy" % self.source_path.stem)
+    return self._destination_filename
 
   @property
   def source_path(self):

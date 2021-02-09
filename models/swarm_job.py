@@ -1,3 +1,5 @@
+import shlex
+import os
 import math
 from time import sleep
 import subprocess
@@ -13,10 +15,16 @@ class SwarmJob:
     self.parallelism = parallelism
 
   def run(self):
+    if os.environ.get('ENVIRONMENT') == 'development':
+      LOGGER.warning("running %s in development mode", self.name)
+      for job in self.jobs:
+        LOGGER.warning("command: %s", job)
+        subprocess.run(shlex.split(job)).check_returncode()
+      return
     self.generate_file()
     self.start()
     while not self.is_complete():
-      self.logger.warning("job not complete yet")
+      LOGGER.warning("job not complete yet")
       sleep(5)
 
   def start(self):

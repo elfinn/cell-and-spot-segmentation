@@ -21,7 +21,6 @@ class GenerateNuclearMaskJob:
     # load maximum projection image
     # run cellpose on it with parameters???
     # iterate over masks and output to disk
-    model.eval([self.image, ...], ...)
     pass
 
   @property

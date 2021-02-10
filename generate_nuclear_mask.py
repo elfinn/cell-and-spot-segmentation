@@ -19,6 +19,7 @@ class GenerateNuclearMaskJob:
     self.logger = logging.getLogger()
 
   def run(self):
+
     numpy.save(self.destination_filename, self.cellpose_filtered)
 
   @property
@@ -63,6 +64,7 @@ class GenerateNuclearMaskJob:
     if not hasattr(self, "_cellpose_filtered"):
       dilated = skimage.segmentation.expand_labels(self.cellpose_result[0], distance=1)
       self._cellpose_filtered = skimage.segmentation.clear_border(dilated)
+    return self._cellpose_filtered
   
 
 def generate_nuclear_mask_cli_str(source, destination, diameter):

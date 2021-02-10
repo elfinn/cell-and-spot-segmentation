@@ -10,6 +10,7 @@ pillow = "*"
 scipy = "*"
 matplotlib = "*"
 scikit-image = "*"
+ipykernel = "*"
 
 [dev-packages]
 

@@ -8,10 +8,11 @@ import skimage.io
 import skimage.segmentation
 import matplotlib.pyplot as plt
 import re
+from models.paths import *
 from models.image_filename import ImageFilename
 from cellpose import models, plot, transforms
 
-class GenerateNuclearMaskJob:
+class GenerateNuclearSegmentationJob:
   def __init__(self, source, destination, diameter):
     self.source = source
     self.destination = destination
@@ -19,31 +20,24 @@ class GenerateNuclearMaskJob:
     self.logger = logging.getLogger()
 
   def run(self):
-
     numpy.save(self.destination_filename, self.cellpose_filtered)
 
   @property
   def destination_path(self):
     if not hasattr(self, "_destination_path"):
-      self._destination_path = Path(self.destination)
-      if not self._destination_path.exists():
-        Path.mkdir(self._destination_path, parents=True)
-      elif not self._destination_path.is_dir():
-        raise Exception("destination already exists, but is not a directory")
+      self._destination_path = destination_path(self.destination)
     return self._destination_path
 
   @property
   def destination_filename(self):
     if not hasattr(self, "_destination_filename"):
-      self._destination_filename = self.destination_path / ("%s_nuclear_masks.npy" % self.source_path.stem)
+      self._destination_filename = self.destination_path / self.source_path.stem.replace("_maximum_projection", "_nuclear_segmentation")
     return self._destination_filename
 
   @property
   def source_path(self):
     if not hasattr(self, "_source_path"):
-      self._source_path = Path(self.source)
-      if not self._source_path.exists():
-        raise Exception("image does not exist")
+      self._source_path = source_path(self.source)
     return self._source_path
 
   @property
@@ -67,16 +61,16 @@ class GenerateNuclearMaskJob:
     return self._cellpose_filtered
   
 
-def generate_nuclear_mask_cli_str(source, destination, diameter):
+def generate_nuclear_segmentation_cli_str(source, destination, diameter):
   result = "pipenv run python %s '%s' '%s'" % (__file__, source, destination)
   if diameter:
     result = "%s --diameter %i" % (result, diameter)
   return result
 
 @cli.log.LoggingApp
-def generate_nuclear_mask_cli(app):
+def generate_nuclear_segmentation_cli(app):
   try:
-    GenerateNuclearMaskJob(
+    GenerateNuclearSegmentationJob(
       app.params.source,
       app.params.destination,
       app.params.diameter
@@ -84,9 +78,9 @@ def generate_nuclear_mask_cli(app):
   except Exception as exception:
     traceback.print_exc()
 
-generate_nuclear_mask_cli.add_param("source", default="C:\\\\Users\\finne\\Documents\\python\\MaxProjections\\AssayPlate_PerkinElmer_CellCarrier-384_B07_T0001F009L01A01ZXXC01_maximum_projection.png", nargs="?")
-generate_nuclear_mask_cli.add_param("destination", default="C:\\\\Users\\finne\\Documents\\python\\NucMasks", nargs="?")
-generate_nuclear_mask_cli.add_param("--diameter", type=int, default=100)
+generate_nuclear_segmentation_cli.add_param("source", default="C:\\\\Users\\finne\\Documents\\python\\MaxProjections\\AssayPlate_PerkinElmer_CellCarrier-384_B07_T0001F009L01A01ZXXC01_maximum_projection.png", nargs="?")
+generate_nuclear_segmentation_cli.add_param("destination", default="C:\\\\Users\\finne\\Documents\\python\\NucMasks", nargs="?")
+generate_nuclear_segmentation_cli.add_param("--diameter", type=int, default=100)
 
 if __name__ == "__main__":
-   generate_nuclear_mask_cli.run()
+   generate_nuclear_segmentation_cli.run()

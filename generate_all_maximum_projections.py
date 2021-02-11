@@ -9,6 +9,7 @@ import subprocess
 from time import sleep
 import re
 
+from models.paths import *
 from models.image_filename import *
 from models.image_filename_constraint import *
 from models.swarm_job import SwarmJob
@@ -50,19 +51,13 @@ class GenerateAllMaximumProjectionsJob:
   @property
   def source_path(self):
     if not hasattr(self, "_source_path"):
-      self._source_path = Path(self.source)
-      if not self._source_path.is_dir():
-        raise Exception("source does not exist")
+      self._source_path = source_path(self.source)
     return self._source_path
   
   @property
   def destination_path(self):
     if not hasattr(self, "_destination_path"):
-      self._destination_path = Path(self.destination)
-      if not self._destination_path.exists():
-        Path.mkdir(self._destination_path, parents=True)
-      elif not self._destination_path.is_dir():
-        raise Exception("destination already exists, but is not a directory")
+      self._destination_path = destination_path(self.destination)
     return self._destination_path
   
   @property

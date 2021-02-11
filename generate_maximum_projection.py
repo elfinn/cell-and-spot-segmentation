@@ -6,6 +6,7 @@ import numpy
 import matplotlib.pyplot as plt
 import re
 
+from models.paths import *
 from models.z_sliced_image import ZSlicedImage
 
 class GenerateMaximumProjectionJob:
@@ -22,17 +23,13 @@ class GenerateMaximumProjectionJob:
   @property
   def destination_path(self):
     if not hasattr(self, "_destination_path"):
-      self._destination_path = Path(self.destination)
-      if not self._destination_path.exists():
-        Path.mkdir(self._destination_path, parents=True)
-      elif not self._destination_path.is_dir():
-        raise Exception("destination already exists, but is not a directory")
+      self._destination_path = destination_path(self.destination)
     return self._destination_path
 
   @property
   def source_directory_path(self):
     if not hasattr(self, "_source_directory_path"):
-      self._source_directory_path = Path(self.source_directory)
+      self._source_directory_path = source_path(self.source_directory)
       if not self._source_directory_path.is_dir():
         raise Exception("image directory does not exist")
     return self._source_directory_path

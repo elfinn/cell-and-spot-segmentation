@@ -1,10 +1,8 @@
 import cli.log
-import logging
 import traceback
 import numpy
 import skimage.measure
 
-from models.labels import distinct_labels
 from models.paths import *
 from models.nuclear_mask import NuclearMask
 

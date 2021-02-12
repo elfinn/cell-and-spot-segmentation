@@ -20,8 +20,6 @@ class GenerateCroppedCellsJob:
   def run(self):
     numpy.save(self.destination_filename, self.masked_cropped_image)
 
-    plt.imshow(self.masked_cropped_image, cmap='gray')
-    plt.show()
 
 
   @property

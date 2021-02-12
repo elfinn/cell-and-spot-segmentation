@@ -21,7 +21,9 @@ class GenerateDistanceTransformJob:
   @property
   def distance_transform(self):
     if not hasattr(self, "_distance_transform"):
-      self._distance_transform = ndimage.distance_transform_edt(self.nuclear_mask)
+       raw_transform = ndimage.distance_transform_edt(self.nuclear_mask)
+       normed_transform = raw_transform/numpy.amax(raw_transform)
+       self._distance_transform = 1 - normed_transform
     return self._distance_transform
   
   @property

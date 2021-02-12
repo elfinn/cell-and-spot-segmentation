@@ -20,8 +20,6 @@ class GenerateCroppedCellsJob:
   def run(self):
     numpy.save(self.destination_filename, self.masked_cropped_image)
 
-
-
   @property
   def destination_filename(self):
     return self.destination_path / self.source_mask_path.stem.replace("C01_nuclear_mask_", self.channel_replace_string)
@@ -87,12 +85,15 @@ class GenerateCroppedCellsJob:
         self._rect_cropped_image = self.image[min_row:min_row+shape[0], min_col:min_col+shape[1]]
     return self._rect_cropped_image
 
+
   @property
   def masked_cropped_image(self):
     if not hasattr(self, "_masked_cropped_image"):
       inverted_crop = skimage.util.invert(self.rect_cropped_image)
-      self._masked_cropped_image = skimage.util.invert(inverted_crop * self.nuclear_mask)
+      log_adjusted = skimage.exposure.adjust_log(inverted_crop)
+      self._masked_cropped_image = log_adjusted * self.nuclear_mask
     return self._masked_cropped_image
+
 
           
 def generate_cropped_cells_cli_str(source, destination):

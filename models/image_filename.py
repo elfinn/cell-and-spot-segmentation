@@ -1,30 +1,21 @@
 import re
+import logging
 
-IMAGE_FILE_GLOB = "*_???_T????F???L??A??Z??C??.tif"
-
-IMAGE_FILE_EXPERIMENT_PATTERN = "(?P<experiment>.+)"
-IMAGE_FILE_WELL_PATTERN = "(?P<well>[A-Z]\\d{2})"
-IMAGE_FILE_T_PATTERN = "T(?P<T>\\d{4})"
-IMAGE_FILE_F_PATTERN = "F(?P<F>\\d{3})"
-IMAGE_FILE_L_PATTERN = "L(?P<L>\\d{2})"
-IMAGE_FILE_A_PATTERN = "A(?P<A>\\d{2})"
-IMAGE_FILE_Z_PATTERN = "Z(?P<Z>\\d{2})"
-IMAGE_FILE_C_PATTERN = "C(?P<C>\\d{2})"
-
-IMAGE_FILE_PATTERN = (
-  "%s_%s_%s%s%s%s%s%s\\.tif" % (
-    IMAGE_FILE_EXPERIMENT_PATTERN, 
-    IMAGE_FILE_WELL_PATTERN, 
-    IMAGE_FILE_T_PATTERN, 
-    IMAGE_FILE_F_PATTERN, 
-    IMAGE_FILE_L_PATTERN, 
-    IMAGE_FILE_A_PATTERN, 
-    IMAGE_FILE_Z_PATTERN, 
-    IMAGE_FILE_C_PATTERN
+IMAGE_FILE_RE = re.compile(
+    "(?P<experiment>.+)" + 
+    "_" + 
+    "(?P<well>[A-Z]\\d{2})" +
+    "_" +
+    "T(?P<t>\\d{4})" +
+    "F(?P<f>\\d{3})" +
+    "L(?P<l>\\d{2})" +
+    "A(?P<a>\\d{2})" + 
+    "Z(?P<z>\\d{2}|XX)" + 
+    "C(?P<c>\\d{2})" + 
+    "(?P<suffix>.*)" + 
+    "\\." + 
+    "(?P<extension>.+)"
   )
-)
-
-IMAGE_FILE_RE = re.compile(IMAGE_FILE_PATTERN)
 
 class ImageFilename:
   def __init__(self, image_filename_str):
@@ -43,27 +34,38 @@ class ImageFilename:
 
   @property
   def t(self):
-    return int(self.match["T"])
+    return int(self.match["t"])
 
   @property
   def f(self):
-    return int(self.match["F"])
+    return int(self.match["f"])
 
   @property
   def l(self):
-    return int(self.match["L"])
+    return int(self.match["l"])
 
   @property
   def a(self):
-    return int(self.match["A"])
+    return int(self.match["a"])
 
   @property
   def z(self):
-    return int(self.match["Z"])
+    if self.match["z"] == "XX":
+      return None
+    else:
+      return int(self.match["z"])
 
   @property
   def c(self):
-    return int(self.match["C"])
+    return int(self.match["c"])
+
+  @property
+  def suffix(self):
+    return self.match["suffix"]
+
+  @property
+  def extension(self):
+    return self.match["extension"]
 
   @property
   def match(self):

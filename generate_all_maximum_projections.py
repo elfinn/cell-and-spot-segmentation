@@ -11,7 +11,7 @@ import re
 
 from models.paths import *
 from models.image_filename import *
-from models.image_filename_constraint import *
+from models.image_filename_glob import *
 from models.swarm_job import SwarmJob
 
 SWARM_SUBJOBS_COUNT = 5
@@ -34,13 +34,9 @@ class GenerateAllMaximumProjectionsJob:
   def jobs(self):
     if not hasattr(self, "_jobs"):
       self._jobs = [
-        generate_maximum_projection_cli_str(self.source, image_filename_constraint, self.destination) for image_filename_constraint in self.distinct_image_filename_constraints
+        generate_maximum_projection_cli_str(self.source, image_filename_glob, self.destination) for image_filename_glob in self.distinct_image_filename_constraints
       ]
     return self._jobs
-
-  @property
-  def jobs(self):
-    return [generate_maximum_projection_cli_str(self.source, image_filename_constraint, self.destination) for image_filename_constraint in self.distinct_image_filename_constraints]
 
   @property
   def job_name(self):
@@ -62,7 +58,7 @@ class GenerateAllMaximumProjectionsJob:
   
   @property
   def image_file_paths(self):
-    return self.source_path.glob(IMAGE_FILE_GLOB)
+    return self.source_path.glob(str(ImageFilenameGlob(suffix="", extension="tif")))
 
   @property
   def image_filenames(self):
@@ -72,7 +68,7 @@ class GenerateAllMaximumProjectionsJob:
   def distinct_image_filename_constraints(self):
     if not hasattr(self, "_distinct_image_filename_constraints"):
       self._distinct_image_filename_constraints = set((
-        ImageFilenameConstraint.from_image_filename(image_filename, excluding_keys=["z"]) for image_filename in self.image_filenames
+        ImageFilenameGlob.from_image_filename(image_filename, excluding_keys=["z"]) for image_filename in self.image_filenames
       ))
     return self._distinct_image_filename_constraints
 

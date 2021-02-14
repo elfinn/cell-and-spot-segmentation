@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from models.paths import *
 from models.nuclear_mask import NuclearMask
 
-class GenerateCroppedCellsJob:
+class GenerateCroppedCellImageJob:
   def __init__(self, source_image, source_mask, destination):
     self.source_image = source_image
     self.source_mask = source_mask
@@ -93,16 +93,14 @@ class GenerateCroppedCellsJob:
       log_adjusted = skimage.exposure.adjust_log(inverted_crop)
       self._masked_cropped_image = log_adjusted * self.nuclear_mask
     return self._masked_cropped_image
-
-
           
-def generate_cropped_cells_cli_str(source, destination):
+def generate_cropped_cell_image_cli_str(source_image, source_mask, destination):
   return "pipenv run python %s '%s' '%s' '%s'" % (__file__, source_image, source_mask, destination)
 
 @cli.log.LoggingApp
-def generate_cropped_cells_cli(app):
+def generate_cropped_cell_image_cli(app):
   try:
-    GenerateCroppedCellsJob(
+    GenerateCroppedCellImageJob(
       app.params.source_image,
       app.params.source_mask,
       app.params.destination,
@@ -110,9 +108,9 @@ def generate_cropped_cells_cli(app):
   except Exception as exception:
     traceback.print_exc()
 
-generate_cropped_cells_cli.add_param("source_image")
-generate_cropped_cells_cli.add_param("source_mask")
-generate_cropped_cells_cli.add_param("destination")
+generate_cropped_cell_image_cli.add_param("source_image")
+generate_cropped_cell_image_cli.add_param("source_mask")
+generate_cropped_cell_image_cli.add_param("destination")
 
 if __name__ == "__main__":
-   generate_cropped_cells_cli.run()
+   generate_cropped_cell_image_cli.run()

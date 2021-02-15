@@ -18,7 +18,8 @@ class GenerateCroppedCellImageJob:
     self.destination = destination
 
   def run(self):
-    numpy.save(self.destination_filename, self.masked_cropped_image)
+    pass
+    #numpy.save(self.destination_filename, self.masked_cropped_image)
 
   @property
   def destination_filename(self):
@@ -85,13 +86,24 @@ class GenerateCroppedCellImageJob:
         self._rect_cropped_image = self.image[min_row:min_row+shape[0], min_col:min_col+shape[1]]
     return self._rect_cropped_image
 
+  @property
+  def min_in_nucleus(self):
+    if not hasattr(self, "_min_in_nucleus"):
+      self._min_in_nucleus = numpy.amin(self.rect_cropped_image, where=self.nuclear_mask, initial=100000)
+    return self._min_in_nucleus
+
+  @property
+  def max_in_nucleus(self):
+    if not hasattr(self, "_max_in_nucleus"):
+      self._max_in_nucleus = numpy.amax(self.rect_cropped_image, where=self.nuclear_mask, initial=0)
+    return self._max_in_nucleus
 
   @property
   def masked_cropped_image(self):
     if not hasattr(self, "_masked_cropped_image"):
-      inverted_crop = skimage.util.invert(self.rect_cropped_image)
-      log_adjusted = skimage.exposure.adjust_log(inverted_crop)
-      self._masked_cropped_image = log_adjusted * self.nuclear_mask
+      normed_image = skimage.exposure.rescale_intensity(self.rect_cropped_image, in_range=(self.min_in_nucleus, self.max_in_nucleus), out_range=(0,1))
+      inverted_image = skimage.util.invert(normed_image)
+      self._masked_cropped_image = inverted_image*self.nuclear_mask
     return self._masked_cropped_image
           
 def generate_cropped_cell_image_cli_str(source_image, source_mask, destination):

@@ -18,8 +18,7 @@ class GenerateCroppedCellImageJob:
     self.destination = destination
 
   def run(self):
-    pass
-    #numpy.save(self.destination_filename, self.masked_cropped_image)
+    numpy.save(self.destination_filename, self.masked_cropped_image)
 
   @property
   def destination_filename(self):

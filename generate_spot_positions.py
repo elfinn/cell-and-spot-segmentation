@@ -7,8 +7,9 @@ from models.image_filename import ImageFilename
 import skimage.filters
 import skimage.io
 import skimage.feature
+import skimage.segmentation
 import numpy
-
+import scipy.ndimage
 class GenerateSpotPositionsJob:
   def __init__(self, source, destination, contrast_threshold):
     self.source = source
@@ -17,7 +18,8 @@ class GenerateSpotPositionsJob:
     self.logger = logging.getLogger()
 
   def run(self):
-      pass
+      for spot_index, spot in enumerate(self.spots):
+        numpy.save(self.destination_filename_for_spot_index(spot_index), spot)
 
   @property
   def destination_path(self):
@@ -25,11 +27,9 @@ class GenerateSpotPositionsJob:
       self._destination_path = destination_path(self.destination)
    return self._destination_path
 
-  @property
-  def destination_filename(self):
-    if not hasattr(self, "_destination_filename"):
-      self._destination_filename = self.destination_path / self.source_path.stem.replace("_cropped_", "_positions_")
-    return self._destination_filename
+  def destination_filename_for_spot_index(self, spot_index):
+    stem = "%s_%i" % (self.source_path.stem.replace("_cropped_", "_position_"), spot_index)
+    return self.destination_path / stem
 
   @property
   def source_path(self):
@@ -40,7 +40,7 @@ class GenerateSpotPositionsJob:
   @property
   def threshold(self):
     if not hasattr(self, "_threshold"):
-      self._threshold = numpy.percentile(self.image, 75)*self.contrast_threshold
+      self._threshold = self.image_background * self.contrast_threshold
     return self._threshold
 
   @property
@@ -58,10 +58,26 @@ class GenerateSpotPositionsJob:
   @property
   def spots(self):
     if not hasattr(self, "_spots"):
-      self._spots = skimage.feature.blob_log(self.filtered_image, min_sigma=0.3, max_sigma=0.3, threshold=self.threshold)
+      self._spots = [
+        self.find_spot_center_of_mass((int(x), int(y)))
+        for x, y, _sigma
+        in skimage.feature.blob_log(self.filtered_image, min_sigma=0.3, max_sigma=0.3, threshold=self.threshold)
+      ]
     return self._spots
 
+  def find_spot_center_of_mass(self, integer_spot):
+    marker = skimage.segmentation.flood(
+      self.image,
+      integer_spot,
+      tolerance=(self.image[integer_spot] - self.image_background) / 2
+    )
+    return scipy.ndimage.center_of_mass(self.image, marker)
   
+  @property
+  def image_background(self):
+    if not hasattr(self, "_image_background"):
+      self._image_background = numpy.percentile(self.image, 75)
+    return self._image_background
 
 def generate_spot_positions_cli_str(source, destination):
   result = "pipenv run python %s '%s' '%s'" % (__file__, source, destination)

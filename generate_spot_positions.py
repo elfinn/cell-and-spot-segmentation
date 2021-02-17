@@ -61,6 +61,8 @@ class GenerateSpotPositionsJob:
       self._spots = skimage.feature.blob_log(self.filtered_image, min_sigma=0.3, max_sigma=0.3, threshold=self.threshold)
     return self._spots
 
+  
+
 def generate_spot_positions_cli_str(source, destination):
   result = "pipenv run python %s '%s' '%s'" % (__file__, source, destination)
   return result

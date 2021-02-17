@@ -79,8 +79,10 @@ class GenerateSpotPositionsJob:
       self._image_background = numpy.percentile(self.image, 75)
     return self._image_background
 
-def generate_spot_positions_cli_str(source, destination):
+def generate_spot_positions_cli_str(source, destination, contrast_threshold=None):
   result = "pipenv run python %s '%s' '%s'" % (__file__, source, destination)
+  if contrast_threshold != None:
+    result = result + (" --contrast_threshold %s" % contrast_threshold)
   return result
 
 @cli.log.LoggingApp
@@ -96,7 +98,7 @@ def generate_spot_positions_cli(app):
 
 generate_spot_positions_cli.add_param("source", default="C:\\\\Users\\finne\\Documents\\python\\cropped_cells\\384_B07_T0001F007L01A01ZXXC03_cropped_016.npy", nargs="?")
 generate_spot_positions_cli.add_param("destination", default="C:\\\\Users\\finne\\Documents\\python\\spot_positions\\", nargs="?")
-generate_spot_positions_cli.add_param("--contrast_threshold", default=3, type=int)
+generate_spot_positions_cli.add_param("--contrast_threshold", default=3, type=float)
 
 if __name__ == "__main__":
    generate_spot_positions_cli.run()

@@ -1,6 +1,8 @@
 import re
 import logging
 
+LOGGER = logging.getLogger()
+
 IMAGE_FILE_RE = re.compile(
     "(?P<experiment>.+)" + 
     "_" + 

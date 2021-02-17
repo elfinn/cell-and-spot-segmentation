@@ -44,8 +44,11 @@ class GenerateDistanceTransformJob:
       self._source_path = source_path(self.source)
     return self._source_path
 
+def generate_distance_transform_cli_str(source, destination):
+  return "pipenv run python %s '%s' '%s'" % (__file__, source, destination)
+
 @cli.log.LoggingApp
-def generate_distance_transform(app):
+def generate_distance_transform_cli(app):
   try:
     GenerateDistanceTransformJob(
       app.params.source,
@@ -54,8 +57,8 @@ def generate_distance_transform(app):
   except Exception as exception:
     traceback.print_exc()
 
-generate_distance_transform.add_param("source", default="C:\\\\Users\\finne\\Documents\\python\\MaxProjections\\AssayPlate_PerkinElmer_CellCarrier-384_B07_T0001F009L01A01ZXXC01_maximum_projection.png", nargs="?")
-generate_distance_transform.add_param("destination", default="C:\\\\Users\\finne\\Documents\\python\\NucMasks", nargs="?")
+generate_distance_transform_cli.add_param("source", default="C:\\\\Users\\finne\\Documents\\python\\MaxProjections\\AssayPlate_PerkinElmer_CellCarrier-384_B07_T0001F009L01A01ZXXC01_maximum_projection.png", nargs="?")
+generate_distance_transform_cli.add_param("destination", default="C:\\\\Users\\finne\\Documents\\python\\NucMasks", nargs="?")
 
 if __name__ == "__main__":
-   generate_distance_transform.run()
+   generate_distance_transform_cli.run()

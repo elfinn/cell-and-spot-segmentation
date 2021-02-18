@@ -18,7 +18,7 @@ class GenerateMaximumProjectionJob:
 
   def run(self):
     plt.imsave(str(self.destination_path / self.maximum_projection_destination_filename), self.maximum_projection, cmap="Greys")
-    numpy.save(self.destination_path / self.weighted_center_destination_filename, self.weighted_center)
+    numpy.save(str(self.destination_path / self.weighted_center_destination_filename), self.weighted_center)
 
   @property
   def destination_path(self):
@@ -98,7 +98,7 @@ class GenerateMaximumProjectionJob:
 
   @property
   def weighted_center_destination_filename(self):
-    return "%s%s" % (self.destination_filename_prefix, "_weighted_center.npy")
+    return "%s%s" % (self.destination_filename_prefix, "_weighted_center")
 
 def generate_maximum_projection_cli_str(source_directory, filename_pattern, destination):
   return "pipenv run python %s '%s' '%s' '%s'" % (__file__, source_directory, filename_pattern, destination)

@@ -40,7 +40,7 @@ class GenerateAllCroppedCellImagesJob:
   @property
   def job_name(self):
     if not hasattr(self, "_job_name"):
-      self._job_name = "generate_all_maximum_projections_%s" % datetime.now().strftime("%Y%m%d%H%M%S")
+      self._job_name = "generate_all_cropped_cell_images_%s" % datetime.now().strftime("%Y%m%d%H%M%S")
     return self._job_name
   
   @property
@@ -69,6 +69,11 @@ class GenerateAllCroppedCellImagesJob:
         for image_file_path
         in self.source_images_path.glob(str(ImageFilenameGlob(suffix="_maximum_projection", extension="png")))
         if ImageFilename(image_file_path.name).c != 1
+      ] + [
+        z_center_file_path
+        for z_center_file_path
+        in self.source_images_path.glob(str(ImageFilenameGlob(suffix="_weighted_center", extension="npy")))
+        if ImageFilename(z_center_file_path.name).c != 1
       ]
     return self._source_image_paths
 

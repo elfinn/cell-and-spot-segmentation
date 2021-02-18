@@ -37,7 +37,7 @@ class GenerateAllDistanceTransformsJob:
   @property
   def job_name(self):
     if not hasattr(self, "_job_name"):
-      self._job_name = "generate_all_maximum_projections_%s" % datetime.now().strftime("%Y%m%d%H%M%S")
+      self._job_name = "generate_all_distance_transforms_%s" % datetime.now().strftime("%Y%m%d%H%M%S")
     return self._job_name
   
   @property

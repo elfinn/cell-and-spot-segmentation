@@ -8,6 +8,7 @@ from generate_spot_positions import generate_spot_positions_cli_str
 from models.paths import *
 from models.swarm_job import SwarmJob
 from models.image_filename import ImageFilename
+from models.image_filename_glob import ImageFilenameGlob
 
 SWARM_SUBJOBS_COUNT = 5
 
@@ -48,7 +49,7 @@ class GenerateAllSpotPositionsJob:
   @property
   def job_name(self):
     if not hasattr(self, "_job_name"):
-      self._job_name = "generate_all_maximum_projections_%s" % datetime.now().strftime("%Y%m%d%H%M%S")
+      self._job_name = "generate_all_spot_positions_%s" % datetime.now().strftime("%Y%m%d%H%M%S")
     return self._job_name
   
   @property
@@ -65,7 +66,7 @@ class GenerateAllSpotPositionsJob:
   
   @property
   def nuclear_mask_paths(self):
-    return self.source_path.glob("*_cropped_???.npy")
+    return self.source_path.glob(str(ImageFilenameGlob(suffix="_maximum_projection_nuclear_mask_???", extension="npy")))
 
 @cli.log.LoggingApp
 def generate_all_spot_positions_cli(app):

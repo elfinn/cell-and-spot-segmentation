@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 
 from models.paths import *
 from models.nuclear_mask import NuclearMask
+from models.image_filename import ImageFilename
 
 class GenerateCroppedCellImageJob:
   def __init__(self, source_image, source_mask, destination):
@@ -22,7 +23,7 @@ class GenerateCroppedCellImageJob:
 
   @property
   def destination_filename(self):
-    return self.destination_path / self.source_mask_path.stem.replace("C01_nuclear_mask_", self.channel_replace_string)
+    return self.destination_path / self.source_image_path.stem.replace(self.source_image_suffix, self.destination_suffix)
 
   @property
   def destination_path(self):
@@ -43,46 +44,60 @@ class GenerateCroppedCellImageJob:
     return self._source_mask_path
 
   @property
-  def source_channel(self):
-    if not hasattr(self, "_source_channel"):
-        channel_pattern = re.compile(r'(C\d{2})_maximum_projection.png')
-        match = channel_pattern.search(self.source_image)
-        if not match:
-            raise Exception("Source image does not specify channel")
-        else: 
-            self._source_channel = match.group(1)
-    return self._source_channel
+  def source_image_filename(self):
+    if not hasattr(self, "_source_image_filename"):
+      self._source_image_filename = ImageFilename(self.source_image_path.name)
+    return self._source_image_filename
 
   @property
-  def channel_replace_string(self):
-    if not hasattr(self, "_channel_replace_string"):
-        self._channel_replace_string = self.source_channel + "_cropped_"
-    return self._channel_replace_string
+  def source_image_suffix(self):
+    return self.source_image_filename.suffix
+
+  @property
+  def source_image_extension(self):
+    return self.source_image_filename.extension
+
+  @property
+  def source_mask_suffix(self):
+    if not hasattr(self, "_source_mask_suffix"):
+      self._source_mask_suffix = ImageFilename(self.source_mask_path.name).suffix
+    return self._source_mask_suffix
+
+  @property
+  def destination_suffix(self):
+    if not hasattr(self, "_destination_suffix"):
+        self._destination_suffix = self.source_image_suffix + self.source_mask_suffix
+    return self._destination_suffix
+
+  @property
+  def mask(self):
+    if not hasattr(self, "_mask"):
+      self._mask = numpy.load(self.source_mask_path, allow_pickle=True).item()
+    return self._mask
 
   @property
   def nuclear_mask(self):
-    if not hasattr(self, "_nuclear_mask"):
-      self._nuclear_mask = numpy.load(self.source_mask_path, allow_pickle=True).item().mask
-    return self._nuclear_mask
+    return self.mask.mask
 
   @property
   def nuclear_offset(self):
-    if not hasattr(self, "_nuclear_offset"):
-      self._nuclear_offset = numpy.load(self.source_mask_path, allow_pickle=True).item().offset
-    return self._nuclear_offset
+    return self.mask.offset
 
   @property
   def image(self):
       if not hasattr(self, "_image"):
+        if self.source_image_extension == "png":
           self._image = skimage.io.imread(self.source_image_path, as_gray=True)
+        else:
+          self._image = numpy.load(self.source_image_path)
       return self._image
 
   @property
   def rect_cropped_image(self):
     if not hasattr(self, "_rect_cropped_image"):
-        [min_row, min_col] = self.nuclear_offset
-        shape = numpy.shape(self.nuclear_mask)
-        self._rect_cropped_image = self.image[min_row:min_row+shape[0], min_col:min_col+shape[1]]
+        [min_row, min_column] = self.nuclear_offset
+        [rows_count, columns_count] = numpy.shape(self.nuclear_mask)
+        self._rect_cropped_image = self.image[min_row:(min_row + rows_count), min_column:(min_column + columns_count)]
     return self._rect_cropped_image
 
   @property
@@ -100,9 +115,12 @@ class GenerateCroppedCellImageJob:
   @property
   def masked_cropped_image(self):
     if not hasattr(self, "_masked_cropped_image"):
-      normed_image = skimage.exposure.rescale_intensity(self.rect_cropped_image, in_range=(self.min_in_nucleus, self.max_in_nucleus), out_range=(0,1))
-      inverted_image = skimage.util.invert(normed_image)
-      self._masked_cropped_image = inverted_image*self.nuclear_mask
+      if self.source_image_extension == "png":
+        normed_image = skimage.exposure.rescale_intensity(self.rect_cropped_image, in_range=(self.min_in_nucleus, self.max_in_nucleus), out_range=(0,1))
+        inverted_image = skimage.util.invert(normed_image)
+        self._masked_cropped_image = inverted_image*self.nuclear_mask
+      else:
+        self._masked_cropped_image = self.rect_cropped_image * self.nuclear_mask
     return self._masked_cropped_image
           
 def generate_cropped_cell_image_cli_str(source_image, source_mask, destination):

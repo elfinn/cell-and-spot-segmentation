@@ -118,7 +118,7 @@ class GenerateCroppedCellImageJob:
       if self.source_image_extension == "png":
         normed_image = skimage.exposure.rescale_intensity(self.rect_cropped_image, in_range=(self.min_in_nucleus, self.max_in_nucleus), out_range=(0,1))
         inverted_image = skimage.util.invert(normed_image)
-        self._masked_cropped_image = inverted_image*self.nuclear_mask
+        self._masked_cropped_image = inverted_image * self.nuclear_mask
       else:
         self._masked_cropped_image = self.rect_cropped_image * self.nuclear_mask
     return self._masked_cropped_image

@@ -72,7 +72,7 @@ class GenerateAllCroppedCellImagesJob:
       ] + [
         z_center_file_path
         for z_center_file_path
-        in self.source_images_path.glob(str(ImageFilenameGlob(suffix="_weighted_center", extension="npy")))
+        in self.source_images_path.glob(str(ImageFilenameGlob(suffix="_z_center", extension="npy")))
         if ImageFilename(z_center_file_path.name).c != 1
       ]
     return self._source_image_paths
@@ -82,7 +82,6 @@ class GenerateAllCroppedCellImagesJob:
     source_mask_filename_glob = ImageFilenameGlob.from_image_filename(source_image_filename, excluding_keys=["a", "c"])
     source_mask_filename_glob.suffix = "_nuclear_mask_???"
     source_mask_filename_glob.extension = "npy"
-    self.logger.warning(str(source_mask_filename_glob))
     return self.source_masks_path.glob(str(source_mask_filename_glob))
 
 @cli.log.LoggingApp

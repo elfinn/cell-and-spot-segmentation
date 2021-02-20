@@ -18,7 +18,7 @@ class GenerateMaximumProjectionJob:
 
   def run(self):
     plt.imsave(str(self.destination_path / self.maximum_projection_destination_filename), self.maximum_projection, cmap="Greys")
-    numpy.save(str(self.destination_path / self.weighted_center_destination_filename), self.weighted_center)
+    numpy.save(str(self.destination_path / self.z_center_destination_filename), self.z_center)
 
   @property
   def destination_path(self):
@@ -45,34 +45,34 @@ class GenerateMaximumProjectionJob:
     return self._maximum_projection
 
   @property
-  def weighted_center(self):
-    if not hasattr(self, "_weighted_center"):
+  def z_center(self):
+    if not hasattr(self, "_z_center"):
       self.process_source_z_sliced_images()
-    return self._weighted_center
+    return self._z_center
 
   def process_source_z_sliced_images(self):
-    if hasattr(self, "_weighted_center") or hasattr(self, "_maximum_projection"):
+    if hasattr(self, "_z_center") or hasattr(self, "_maximum_projection"):
       raise Exception("already computed")
 
     shaped = False
     maximum_projection = None
-    summed_values = None
-    weighted_summed_values = None
+    summed_z_values = None
+    weighted_summed_z_values = None
     for source_z_sliced_image in self.source_z_sliced_images:
       if not shaped:
         shaped = True
         shape = numpy.shape(source_z_sliced_image.numpy_array)
         maximum_projection = numpy.empty(shape)
-        summed_values = numpy.empty(shape)
-        weighted_summed_values = numpy.empty(shape)
+        summed_z_values = numpy.empty(shape)
+        weighted_summed_z_values = numpy.empty(shape)
       
       maximum_projection = numpy.fmax(maximum_projection, source_z_sliced_image.numpy_array)
-      summed_values = summed_values + source_z_sliced_image.numpy_array
-      weighted_summed_values = weighted_summed_values + (source_z_sliced_image.numpy_array * source_z_sliced_image.z)
+      summed_z_values = summed_z_values + source_z_sliced_image.numpy_array
+      weighted_summed_z_values = weighted_summed_z_values + (source_z_sliced_image.numpy_array * source_z_sliced_image.z)
 
-    summed_values = numpy.fmax(summed_values, numpy.ones_like(summed_values))
+    summed_z_values = numpy.fmax(summed_z_values, numpy.ones_like(summed_z_values))
     self._maximum_projection = maximum_projection
-    self._weighted_center = (weighted_summed_values/summed_values).astype(numpy.float16)
+    self._z_center = (weighted_summed_z_values/summed_z_values).astype(numpy.float16)
 
   @property
   def source_z_sliced_images(self):
@@ -97,8 +97,8 @@ class GenerateMaximumProjectionJob:
     return "%s%s" % (self.destination_filename_prefix, "_maximum_projection.png")
 
   @property
-  def weighted_center_destination_filename(self):
-    return "%s%s" % (self.destination_filename_prefix, "_weighted_center")
+  def z_center_destination_filename(self):
+    return "%s%s" % (self.destination_filename_prefix, "_z_center")
 
 def generate_maximum_projection_cli_str(source_directory, filename_pattern, destination):
   return "pipenv run python %s '%s' '%s' '%s'" % (__file__, source_directory, filename_pattern, destination)

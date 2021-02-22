@@ -1,15 +1,19 @@
-import cli.log
 import logging
-from pathlib import Path
 import traceback
-from models.paths import *
-from models.image_filename import ImageFilename
-import skimage.filters
-import skimage.io
-import skimage.feature
-import skimage.segmentation
+from pathlib import Path
+
+import cli.log
 import numpy
 import scipy.ndimage
+import skimage.feature
+import skimage.filters
+import skimage.io
+import skimage.segmentation
+
+from models.image_filename import ImageFilename
+from models.paths import *
+
+
 class GenerateSpotPositionsJob:
   def __init__(self, source, destination, contrast_threshold):
     self.source = source

@@ -1,10 +1,12 @@
-import cli.log
 import traceback
+
+import cli.log
 import numpy
 import skimage.measure
 
-from models.paths import *
 from models.nuclear_mask import NuclearMask
+from models.paths import *
+
 
 class GenerateNuclearMasksJob:
   def __init__(self, source, destination):

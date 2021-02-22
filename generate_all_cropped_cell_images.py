@@ -1,13 +1,13 @@
+import logging
 import traceback
 from datetime import datetime
+
 import cli.log
-import logging
 
 from generate_cropped_cell_image import generate_cropped_cell_image_cli_str
-
-from models.paths import *
 from models.image_filename import ImageFilename
 from models.image_filename_glob import ImageFilenameGlob
+from models.paths import *
 from models.swarm_job import SwarmJob
 
 SWARM_SUBJOBS_COUNT = 5
@@ -68,17 +68,17 @@ class GenerateAllCroppedCellImagesJob:
         image_file_path
         for image_file_path
         in self.source_images_path.glob(str(ImageFilenameGlob(suffix="_maximum_projection", extension="png")))
-        if ImageFilename(image_file_path.name).c != 1
+        if ImageFilename.parse(image_file_path.name).c != 1
       ] + [
         z_center_file_path
         for z_center_file_path
         in self.source_images_path.glob(str(ImageFilenameGlob(suffix="_z_center", extension="npy")))
-        if ImageFilename(z_center_file_path.name).c != 1
+        if ImageFilename.parse(z_center_file_path.name).c != 1
       ]
     return self._source_image_paths
 
   def source_mask_paths_for_source_image_path(self, source_image_path):
-    source_image_filename = ImageFilename(source_image_path.name)
+    source_image_filename = ImageFilename.parse(source_image_path.name)
     source_mask_filename_glob = ImageFilenameGlob.from_image_filename(source_image_filename, excluding_keys=["a", "c"])
     source_mask_filename_glob.suffix = "_nuclear_mask_???"
     source_mask_filename_glob.extension = "npy"

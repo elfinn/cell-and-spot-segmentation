@@ -1,16 +1,20 @@
-import cli.log
 import logging
-from pathlib import Path
+import re
 import traceback
+from copy import copy
+from pathlib import Path
+
+import cli.log
+import matplotlib.pyplot as plt
 import numpy
 import scipy
 import skimage.io
 import skimage.segmentation
-import matplotlib.pyplot as plt
-import re
-from models.paths import *
-from models.image_filename import ImageFilename
 from cellpose import models, plot, transforms
+
+from models.image_filename import ImageFilename
+from models.paths import *
+
 
 class GenerateNuclearSegmentationJob:
   def __init__(self, source, destination, diameter):
@@ -31,14 +35,31 @@ class GenerateNuclearSegmentationJob:
   @property
   def destination_filename(self):
     if not hasattr(self, "_destination_filename"):
-      self._destination_filename = self.destination_path / self.source_path.stem.replace("_maximum_projection", "_nuclear_segmentation")
+      self._destination_filename = self.destination_path / str(self.destination_image_filename)
     return self._destination_filename
+
+  @property
+  def destination_image_filename(self):
+    if not hasattr(self, "_destination_image_filename"):
+      self._destination_image_filename = copy(self.source_image_filename)
+      self._destination_image_filename.a = None
+      self._destination_image_filename.z = None
+      self._destination_image_filename.c = None
+      self._destination_image_filename.suffix = "_nuclear_segmentation"
+      self._destination_image_filename.extension = "npy"
+    return self._destination_image_filename
 
   @property
   def source_path(self):
     if not hasattr(self, "_source_path"):
       self._source_path = source_path(self.source)
     return self._source_path
+
+  @property
+  def source_image_filename(self):
+    if not hasattr(self, "_source_image_filename"):
+      self._source_image_filename = ImageFilename.parse(self.source_path.name)
+    return self._source_image_filename
 
   @property
   def image(self):

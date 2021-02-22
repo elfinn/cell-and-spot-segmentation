@@ -1,10 +1,13 @@
-import cli.log
-import traceback
-import numpy
+import copy
 import logging
+import traceback
+
+import cli.log
+import numpy
 from scipy import ndimage
 
 from models.paths import *
+
 
 class GenerateDistanceTransformJob:
   def __init__(self, source, destination):

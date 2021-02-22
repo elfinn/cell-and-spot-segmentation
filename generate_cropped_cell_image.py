@@ -1,16 +1,18 @@
-import cli.log
-import traceback
-import numpy
-import skimage.measure
 import re
+import traceback
+from copy import copy
+
+import cli.log
+import matplotlib.pyplot as plt
+import numpy
 import skimage.io
+import skimage.measure
 import skimage.util
 
-import matplotlib.pyplot as plt
-
-from models.paths import *
-from models.nuclear_mask import NuclearMask
 from models.image_filename import ImageFilename
+from models.nuclear_mask import NuclearMask
+from models.paths import *
+
 
 class GenerateCroppedCellImageJob:
   def __init__(self, source_image, source_mask, destination):
@@ -23,13 +25,21 @@ class GenerateCroppedCellImageJob:
 
   @property
   def destination_filename(self):
-    return self.destination_path / self.source_image_path.stem.replace(self.source_image_suffix, self.destination_suffix)
+    return self.destination_path / str(self.destination_image_filename)
 
   @property
   def destination_path(self):
     if not hasattr(self, "_destination_path"):
       self._destination_path = destination_path(self.destination)
     return self._destination_path
+
+  @property
+  def destination_image_filename(self):
+    if not hasattr(self, "_destination_image_filename"):
+      self._destination_image_filename = copy(self.source_image_filename)
+      self._destination_image_filename.suffix = self.destination_suffix
+      self._destination_image_filename.extension = "npy"
+    return self._destination_image_filename
 
   @property
   def source_image_path(self):
@@ -46,7 +56,7 @@ class GenerateCroppedCellImageJob:
   @property
   def source_image_filename(self):
     if not hasattr(self, "_source_image_filename"):
-      self._source_image_filename = ImageFilename(self.source_image_path.name)
+      self._source_image_filename = ImageFilename.parse(self.source_image_path.name)
     return self._source_image_filename
 
   @property
@@ -60,7 +70,7 @@ class GenerateCroppedCellImageJob:
   @property
   def source_mask_suffix(self):
     if not hasattr(self, "_source_mask_suffix"):
-      self._source_mask_suffix = ImageFilename(self.source_mask_path.name).suffix
+      self._source_mask_suffix = ImageFilename.parse(self.source_mask_path.name).suffix
     return self._source_mask_suffix
 
   @property

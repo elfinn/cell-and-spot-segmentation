@@ -1,13 +1,15 @@
-import cli.log
-import logging
-from pathlib import Path
-import traceback
 import csv
-import numpy
+import logging
 import re
+import traceback
+from copy import copy
+from pathlib import Path
 
-from models.paths import *
+import cli.log
+import numpy
+
 from models.image_filename import ImageFilename
+from models.paths import *
 
 SPOT_RESULT_FILE_SUFFIX_RE = re.compile("_maximum_projection_nuclear_mask_(?P<nucleus_index>\d{3})_(?P<spot_index>\d+)")
 
@@ -61,7 +63,7 @@ class GenerateSpotResultLineJob:
   @property
   def source_image_filename(self):
     if not hasattr(self, "_source_image_filename"):
-      self._source_image_filename = ImageFilename(self.source_path.name)
+      self._source_image_filename = ImageFilename.parse(self.source_path.name)
     return self._source_image_filename
   
   @property
@@ -112,16 +114,14 @@ class GenerateSpotResultLineJob:
   @property
   def z_center_image_filename(self):
     if not hasattr(self, "_z_center_image_filename"):
-      self._z_center_image_filename = self.source_path.name.replace(
-        self.source_image_filename.suffix,
-        "_z_center_nuclear_mask_%s" % self.nucleus_index
-      )
+      self._z_center_image_filename = copy(self.source_image_filename)
+      self._z_center_image_filename.suffix = "_z_center_nuclear_mask_%s" % self.nucleus_index
     return self._z_center_image_filename
 
   @property
   def z_center_image_path(self):
     if not hasattr(self, "_z_center_image_path"):
-      self._z_center_image_path = self.z_centers_source_directory_path / self.z_center_image_filename
+      self._z_center_image_path = self.z_centers_source_directory_path / str(self.z_center_image_filename)
     return self._z_center_image_path
 
   @property
@@ -137,20 +137,21 @@ class GenerateSpotResultLineJob:
   @property
   def center_z(self):
     return self.z_center_image[self.pixel_center]
-  
+
   @property
   def distance_transform_image_filename(self):
     if not hasattr(self, "_distance_transform_image_filename"):
-      self._distance_transform_image_filename = self.source_path.name.replace(
-        self.source_image_filename.suffix,
-        "_distance_transform_%s" % self.nucleus_index
-      )
+      self._distance_transform_image_filename = copy(self.source_image_filename)
+      self._distance_transform_image_filename.suffix = "_distance_transform_%s" % self.nucleus_index
+      self._distance_transform_image_filename.a = None
+      self._distance_transform_image_filename.z = None
+      self._distance_transform_image_filename.c = None
     return self._distance_transform_image_filename
   
   @property
   def distance_transform_image_path(self):
     if not hasattr(self, "_distance_transform_image_path"):
-      self._distance_transform_image_path = self.distance_transforms_source_directory_path / self.distance_transform_image_filename
+      self._distance_transform_image_path = self.distance_transforms_source_directory_path / str(self.distance_transform_image_filename)
     return self._distance_transform_image_path
 
   @property

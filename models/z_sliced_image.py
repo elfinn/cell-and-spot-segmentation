@@ -21,6 +21,6 @@ class ZSlicedImage:
   @property
   def z(self):
     if not hasattr(self, "_z"):
-      image_filename = ImageFilename(self.path.name)
+      image_filename = ImageFilename.parse(self.path.name)
       self._z = image_filename.z
     return self._z

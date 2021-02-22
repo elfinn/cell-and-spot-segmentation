@@ -1,17 +1,18 @@
+import logging
 import math
+import re
+import subprocess
 import traceback
 from datetime import datetime
 from pathlib import Path
-import cli.log
-import logging
-from generate_maximum_projection import generate_maximum_projection_cli_str
-import subprocess
 from time import sleep
-import re
 
-from models.paths import *
+import cli.log
+
+from generate_maximum_projection import generate_maximum_projection_cli_str
 from models.image_filename import *
 from models.image_filename_glob import *
+from models.paths import *
 from models.swarm_job import SwarmJob
 
 SWARM_SUBJOBS_COUNT = 5
@@ -62,7 +63,7 @@ class GenerateAllMaximumProjectionsJob:
 
   @property
   def image_filenames(self):
-    return (ImageFilename(image_file_path.name) for image_file_path in self.image_file_paths)
+    return (ImageFilename.parse(image_file_path.name) for image_file_path in self.image_file_paths)
 
   @property
   def distinct_image_filename_constraints(self):

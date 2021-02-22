@@ -8,71 +8,96 @@ IMAGE_FILE_RE = re.compile(
     "_" + 
     "(?P<well>[A-Z]\\d{2})" +
     "_" +
-    "T(?P<t>\\d{4})" +
-    "F(?P<f>\\d{3})" +
-    "L(?P<l>\\d{2})" +
-    "A(?P<a>\\d{2})" + 
+    "T(?P<t>\\d{4}|XXXX)" +
+    "F(?P<f>\\d{3}|XXX)" +
+    "L(?P<l>\\d{2}|XX)" +
+    "A(?P<a>\\d{2}|XX)" + 
     "Z(?P<z>\\d{2}|XX)" + 
-    "C(?P<c>\\d{2})" + 
+    "C(?P<c>\\d{2}|XX)" + 
     "(?P<suffix>.*)" + 
     "\\." + 
     "(?P<extension>.+)"
   )
 
 class ImageFilename:
-  def __init__(self, image_filename_str):
-    self.image_filename_str = image_filename_str
+  @classmethod
+  def parse(cls, image_filename_str):
+    match = IMAGE_FILE_RE.match(image_filename_str)
+    if not match:
+      raise Exception("invalid image filename: %s" % image_filename_str)
+    return cls(
+      experiment=match["experiment"],
+      well=match["well"],
+      t=(None if match["t"] == "XXXX" else int(match["t"])),
+      f=(None if match["f"] == "XXX" else int(match["f"])),
+      l=(None if match["l"] == "XX" else int(match["l"])),
+      a=(None if match["a"] == "XX" else int(match["a"])),
+      z=(None if match["z"] == "XX" else int(match["z"])),
+      c=(None if match["c"] == "XX" else int(match["c"])),
+      suffix=match["suffix"],
+      extension=match["extension"],
+    )
+
+  def __init__(self, experiment, well, t, f, l, a, z, c, suffix, extension):
+    self.experiment = experiment
+    self.well = well
+    self.t = t
+    self.f = f
+    self.l = l
+    self.a = a
+    self.z = z
+    self.c = c
+    self.suffix = suffix
+    self.extension = extension
 
   def __str__(self):
-    return self.image_filename_str
+    return "%s_%s_T%sF%sL%sA%sZ%sC%s%s.%s" % (
+      self.experiment,
+      self.well,
+      self.t_str,
+      self.f_str,
+      self.l_str,
+      self.a_str,
+      self.z_str,
+      self.c_str,
+      self.suffix,
+      self.extension
+    )
+
+  def __copy__(self):
+    return ImageFilename(
+      experiment=self.experiment,
+      well=self.well,
+      t=self.t,
+      f=self.f,
+      l=self.l,
+      a=self.a,
+      z=self.z,
+      c=self.c,
+      suffix=self.suffix,
+      extension=self.extension
+    )
 
   @property
-  def experiment(self):
-    return self.match["experiment"]
+  def t_str(self):
+    return "XXXX" if not self.t else ("%04i" % self.t)
 
   @property
-  def well(self):
-    return self.match["well"]
+  def f_str(self):
+    return "XXX" if not self.f else ("%03i" % self.f)
 
   @property
-  def t(self):
-    return int(self.match["t"])
+  def l_str(self):
+    return "XX" if not self.l else ("%02i" % self.l)
 
   @property
-  def f(self):
-    return int(self.match["f"])
+  def a_str(self):
+    return "XX" if not self.a else ("%02i" % self.a)
 
   @property
-  def l(self):
-    return int(self.match["l"])
+  def z_str(self):
+    return "XX" if not self.z else ("%02i" % self.z)
 
   @property
-  def a(self):
-    return int(self.match["a"])
-
-  @property
-  def z(self):
-    if self.match["z"] == "XX":
-      return None
-    else:
-      return int(self.match["z"])
-
-  @property
-  def c(self):
-    return int(self.match["c"])
-
-  @property
-  def suffix(self):
-    return self.match["suffix"]
-
-  @property
-  def extension(self):
-    return self.match["extension"]
-
-  @property
-  def match(self):
-    if not hasattr(self, '_match'):
-        self._match = IMAGE_FILE_RE.match(self.image_filename_str)
-        if not self._match:
-          raise Exception("invalid image filename: %s" % self.image_filename_str)
-    return self._match
+  def c_str(self):
+    return "XX" if not self.c else ("%02i" % self.c)

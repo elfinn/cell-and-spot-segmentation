@@ -1,13 +1,15 @@
-import cli.log
 import logging
-from pathlib import Path
-import traceback
-import numpy
-import matplotlib.pyplot as plt
 import re
+import traceback
+from pathlib import Path
+
+import cli.log
+import matplotlib.pyplot as plt
+import numpy
 
 from models.paths import *
 from models.z_sliced_image import ZSlicedImage
+
 
 class GenerateMaximumProjectionJob:
   def __init__(self, source_directory, filename_pattern, destination):

@@ -41,7 +41,7 @@ class GenerateAllSpotPositionsJob:
     return self._jobs
 
   def contrast_threshold_for_nuclear_mask_path(self, nuclear_mask_path):
-    c = ImageFilename(nuclear_mask_path.name).c
+    c = ImageFilename.parse(nuclear_mask_path.name).c
     if c == 3:
       return 4
     return None

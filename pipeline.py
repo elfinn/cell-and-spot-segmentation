@@ -1,18 +1,20 @@
-from threading import Thread
 import traceback
 from datetime import datetime
+from threading import Thread
 
 import cli.log
 
-from models.paths import *
-from generate_all_maximum_projections import GenerateAllMaximumProjectionsJob
-from generate_all_nuclear_segmentations import GenerateAllNuclearSegmentationsJob
-from generate_all_nuclear_masks import GenerateAllNuclearMasksJob
-from generate_all_distance_transforms import GenerateAllDistanceTransformsJob
 from generate_all_cropped_cell_images import GenerateAllCroppedCellImagesJob
+from generate_all_distance_transforms import GenerateAllDistanceTransformsJob
+from generate_all_maximum_projections import GenerateAllMaximumProjectionsJob
+from generate_all_nuclear_masks import GenerateAllNuclearMasksJob
+from generate_all_nuclear_segmentations import \
+    GenerateAllNuclearSegmentationsJob
 from generate_all_spot_positions import GenerateAllSpotPositionsJob
 from generate_all_spot_result_lines import GenerateAllSpotResultLinesJob
 from generate_spot_results_file import GenerateSpotResultsFileJob
+from models.paths import *
+
 
 class PipelineJob:
   def __init__(self, source, destination):
@@ -40,8 +42,6 @@ class PipelineJob:
     GenerateAllSpotPositionsJob(self.cropped_cell_images_path, self.spot_positions_path).run()
     GenerateAllSpotResultLinesJob(self.spot_positions_path, self.cropped_cell_images_path, self.distance_transforms_path, self.spot_result_lines_path).run()
     GenerateSpotResultsFileJob(self.spot_result_lines_path, self.destination_path).run()
-
-
 
   @property
   def source_path(self):

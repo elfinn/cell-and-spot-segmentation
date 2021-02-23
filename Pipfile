@@ -6,7 +6,6 @@ name = "pypi"
 [packages]
 pycli = "*"
 numpy = "*"
-pillow = "*"
 scipy = "*"
 matplotlib = "*"
 scikit-image = "*"

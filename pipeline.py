@@ -40,7 +40,13 @@ class PipelineJob:
     generate_all_cropped_cell_images_thread.join()
 
     GenerateAllSpotPositionsJob(self.cropped_cell_images_path, self.spot_positions_path).run()
-    GenerateAllSpotResultLinesJob(self.spot_positions_path, self.cropped_cell_images_path, self.distance_transforms_path, self.spot_result_lines_path).run()
+    GenerateAllSpotResultLinesJob(
+      self.spot_positions_path,
+      self.cropped_cell_images_path,
+      self.distance_transforms_path,
+      self.nuclear_masks_path,
+      self.spot_result_lines_path
+    ).run()
     GenerateSpotResultsFileJob(self.spot_result_lines_path, self.destination_path).run()
 
   @property

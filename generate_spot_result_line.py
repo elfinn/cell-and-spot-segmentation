@@ -15,10 +15,18 @@ from models.paths import *
 SPOT_RESULT_FILE_SUFFIX_RE = re.compile("_nucleus_(?P<nucleus_index>\d{3})_spot_(?P<spot_index>\d+)")
 
 class GenerateSpotResultLineJob:
-  def __init__(self, spot_source, z_centers_source_directory, distance_transforms_source_directory, destination):
+  def __init__(
+    self,
+    spot_source,
+    z_centers_source_directory,
+    distance_transforms_source_directory,
+    nuclear_masks_source_directory,
+    destination
+  ):
     self.spot_source = spot_source
     self.z_centers_source_directory = z_centers_source_directory
     self.distance_transforms_source_directory = distance_transforms_source_directory
+    self.nuclear_masks_source_directory = nuclear_masks_source_directory
     self.destination = destination
   
   def run(self):
@@ -43,6 +51,8 @@ class GenerateSpotResultLineJob:
       "center_y": self.center_y,
       "center_z": self.center_z,
       "center_r": self.center_r,
+      "nuclear_mask_offset_x": self.nuclear_mask_offset_x,
+      "nuclear_mask_offset_y": self.nuclear_mask_offset_y
     }
 
   @property
@@ -111,7 +121,6 @@ class GenerateSpotResultLineJob:
         raise Exception("distance transforms source directory does not exist")
     return self._distance_transforms_source_directory_path
 
-
   @property
   def z_center_image_filename(self):
     if not hasattr(self, "_z_center_image_filename"):
@@ -164,8 +173,52 @@ class GenerateSpotResultLineJob:
   @property
   def center_r(self):
     return self.distance_transform_image[self.pixel_center]
+  
+  @property
+  def nuclear_mask_offset_x(self):
+    return self.nuclear_mask.offset[0]
 
-def generate_spot_result_line_cli_str(spot_sources, z_centers_source_directory, distance_transforms_source_directory, destination):
+  @property
+  def nuclear_mask_offset_y(self):
+    return self.nuclear_mask.offset[1]
+
+  @property
+  def nuclear_mask(self):
+    if not hasattr(self, "_nuclear_mask"):
+      self._nuclear_mask = numpy.load(self.nuclear_mask_path, allow_pickle=True).item()
+    return self._nuclear_mask
+  
+  @property
+  def nuclear_masks_source_directory_path(self):
+    if not hasattr(self, "_nuclear_masks_source_directory_path"):
+      self._nuclear_masks_source_directory_path = source_path(self.nuclear_masks_source_directory)
+      if not self._nuclear_masks_source_directory_path.is_dir():
+        raise Exception("z centers source directory does not exist")
+    return self._nuclear_masks_source_directory_path
+
+  @property
+  def nuclear_mask_path(self):
+    if not hasattr(self, "_nuclear_mask_path"):
+      self._nuclear_mask_path = self.nuclear_masks_source_directory_path / str(self.nuclear_mask_image_filename)
+    return self._nuclear_mask_path
+
+  @property
+  def nuclear_mask_image_filename(self):
+    if not hasattr(self, "_nuclear_mask_image_filename"):
+      self._nuclear_mask_image_filename = copy(self.source_image_filename)
+      self._nuclear_mask_image_filename.suffix = "_nuclear_mask_%s" % self.nucleus_index
+      self._nuclear_mask_image_filename.a = None
+      self._nuclear_mask_image_filename.z = None
+      self._nuclear_mask_image_filename.c = None
+    return self._nuclear_mask_image_filename
+
+def generate_spot_result_line_cli_str(
+  spot_sources,
+  z_centers_source_directory,
+  distance_transforms_source_directory,
+  nuclear_masks_source_directory,
+  destination
+):
   return shlex.join([
     "pipenv",
     "run",
@@ -173,6 +226,7 @@ def generate_spot_result_line_cli_str(spot_sources, z_centers_source_directory, 
     __file__,
     "--z_centers_source_directory=%s" % z_centers_source_directory,
     "--distance_transforms_source_directory=%s" % distance_transforms_source_directory,
+    "--nuclear_masks_source_directory=%s" % nuclear_masks_source_directory,
     "--destination=%s" % destination,
     *[str(spot_source) for spot_source in spot_sources]
   ])
@@ -185,6 +239,7 @@ def generate_spot_result_line_cli(app):
         spot_source,
         app.params.z_centers_source_directory,
         app.params.distance_transforms_source_directory,
+        app.params.nuclear_masks_source_directory,
         app.params.destination,
       ).run()
     except Exception as exception:
@@ -193,6 +248,7 @@ def generate_spot_result_line_cli(app):
 generate_spot_result_line_cli.add_param("spot_sources", nargs="*")
 generate_spot_result_line_cli.add_param("--z_centers_source_directory", required=True)
 generate_spot_result_line_cli.add_param("--distance_transforms_source_directory", required=True)
+generate_spot_result_line_cli.add_param("--nuclear_masks_source_directory", required=True)
 generate_spot_result_line_cli.add_param("--destination", required=True)
 
 if __name__ == "__main__":

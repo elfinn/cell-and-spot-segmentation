@@ -13,10 +13,18 @@ from models.swarm_job import SwarmJob, shard_job_params
 SWARM_SUBJOBS_COUNT = 5
 
 class GenerateAllSpotResultLinesJob:
-  def __init__(self, spots_source_directory, z_centers_source_directory, distance_transforms_source_directory, destination):
+  def __init__(
+    self,
+    spots_source_directory,
+    z_centers_source_directory,
+    distance_transforms_source_directory,
+    nuclear_masks_source_directory_path,
+    destination
+  ):
     self.spots_source_directory = spots_source_directory
     self.z_centers_source_directory = z_centers_source_directory
     self.distance_transforms_source_directory = distance_transforms_source_directory
+    self.nuclear_masks_source_directory_path = nuclear_masks_source_directory_path
     self.destination = destination
     self.logger = logging.getLogger()
   
@@ -37,6 +45,7 @@ class GenerateAllSpotResultLinesJob:
           spot_source_paths_shard,
           self.z_centers_source_directory,
           self.distance_transforms_source_directory,
+          self.nuclear_masks_source_directory_path,
           self.destination
         )
         for spot_source_paths_shard in spot_source_paths_shards
@@ -68,6 +77,7 @@ def generate_all_spot_result_lines_cli(app):
       app.params.spots_source_directory,
       app.params.z_centers_source_directory,
       app.params.distance_transforms_source_directory,
+      app.params.nuclear_masks_source_directory_path,
       app.params.destination,
     ).run()
   except Exception as exception:
@@ -76,6 +86,7 @@ def generate_all_spot_result_lines_cli(app):
 generate_all_spot_result_lines_cli.add_param("spots_source_directory", default="todo", nargs="?")
 generate_all_spot_result_lines_cli.add_param("z_centers_source_directory", default="todo", nargs="?")
 generate_all_spot_result_lines_cli.add_param("distance_transforms_source_directory", default="todo", nargs="?")
+generate_all_spot_result_lines_cli.add_param("nuclear_masks_source_directory_path", default="todo", nargs="?")
 generate_all_spot_result_lines_cli.add_param("destination", default="C:\\\\Users\\finne\\Documents\\python\\spot_result_lines\\", nargs="?")
 
 if __name__ == "__main__":

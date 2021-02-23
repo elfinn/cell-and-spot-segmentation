@@ -7,6 +7,22 @@ import logging
 
 LOGGER = logging.getLogger()
 
+
+def shard_jobs(jobs, parallelism):
+  jobs_count = len(jobs)
+  small_shard_jobs_count = math.floor(jobs_count / parallelism)
+  large_shard_jobs_count = small_shard_jobs_count + 1
+  small_shards_count = jobs_count % parallelism
+  
+  sharded_jobs = []
+  next_shard_start_index = 0
+  for i in range(parallelism):
+    shard_jobs_count = large_shard_jobs_count if i < small_shards_count else small_shard_jobs_count
+    shard_end_index = next_shard_start_index + shard_jobs_count
+    sharded_jobs.append(jobs[next_shard_start_index:shard_end_index])
+    next_shard_start_index = shard_end_index
+  return sharded_jobs
+
 class SwarmJob:
   def __init__(self, destination_path, name, jobs, parallelism):
     self.destination_path = destination_path

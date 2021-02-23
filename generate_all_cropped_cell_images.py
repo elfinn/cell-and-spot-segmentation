@@ -8,7 +8,7 @@ from generate_cropped_cell_image import generate_cropped_cell_image_cli_str
 from models.image_filename import ImageFilename
 from models.image_filename_glob import ImageFilenameGlob
 from models.paths import *
-from models.swarm_job import SwarmJob
+from models.swarm_job import shard_jobs, SwarmJob
 
 SWARM_SUBJOBS_COUNT = 5
 
@@ -30,11 +30,13 @@ class GenerateAllCroppedCellImagesJob:
   @property
   def jobs(self):
     if not hasattr(self, "_jobs"):
-      self._jobs = [
-        generate_cropped_cell_image_cli_str(source_image, source_mask, self.destination)
-        for source_image in self.source_image_paths
-        for source_mask in self.source_mask_paths_for_source_image_path(source_image)
+      masks = [
+        (source_image_path, source_mask_path)
+        for source_image_path in self.source_image_paths
+        for source_mask_path in self.source_mask_paths_for_source_image_path(source_image_path)
       ]
+      shards = shard_jobs(masks, SWARM_SUBJOBS_COUNT)
+      self._jobs = [generate_cropped_cell_image_cli_str(shard, self.destination_path) for shard in shards]
     return self._jobs
 
   @property

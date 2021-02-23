@@ -1,6 +1,8 @@
 import re
+import shlex
 import traceback
 from copy import copy
+from functools import lru_cache
 
 import cli.log
 import matplotlib.pyplot as plt
@@ -13,6 +15,13 @@ from models.image_filename import ImageFilename
 from models.nuclear_mask import NuclearMask
 from models.paths import *
 
+
+@lru_cache(maxsize=1)
+def load_source_image(source_image_path):
+  if source_image_path.suffix == ".png":
+    return skimage.io.imread(source_image_path, as_gray=True)
+  else:
+    return numpy.load(source_image_path)
 
 class GenerateCroppedCellImageJob:
   def __init__(self, source_image, source_mask, destination):
@@ -64,10 +73,6 @@ class GenerateCroppedCellImageJob:
     return self.source_image_filename.suffix
 
   @property
-  def source_image_extension(self):
-    return self.source_image_filename.extension
-
-  @property
   def source_mask_suffix(self):
     if not hasattr(self, "_source_mask_suffix"):
       self._source_mask_suffix = ImageFilename.parse(self.source_mask_path.name).suffix
@@ -96,10 +101,7 @@ class GenerateCroppedCellImageJob:
   @property
   def image(self):
       if not hasattr(self, "_image"):
-        if self.source_image_extension == "png":
-          self._image = skimage.io.imread(self.source_image_path, as_gray=True)
-        else:
-          self._image = numpy.load(self.source_image_path)
+        self._image = load_source_image(self.source_image_path)
       return self._image
 
   @property
@@ -125,7 +127,7 @@ class GenerateCroppedCellImageJob:
   @property
   def masked_cropped_image(self):
     if not hasattr(self, "_masked_cropped_image"):
-      if self.source_image_extension == "png":
+      if self.source_image_filename.extension == "png":
         normed_image = skimage.exposure.rescale_intensity(self.rect_cropped_image, in_range=(self.min_in_nucleus, self.max_in_nucleus), out_range=(0,1))
         inverted_image = skimage.util.invert(normed_image)
         self._masked_cropped_image = inverted_image * self.nuclear_mask
@@ -133,23 +135,32 @@ class GenerateCroppedCellImageJob:
         self._masked_cropped_image = self.rect_cropped_image * self.nuclear_mask
     return self._masked_cropped_image
           
-def generate_cropped_cell_image_cli_str(source_image, source_mask, destination):
-  return "pipenv run python %s '%s' '%s' '%s'" % (__file__, source_image, source_mask, destination)
+def generate_cropped_cell_image_cli_str(masks, destination):
+  serialized_masks = ("%s:%s" % mask for mask in masks)
+  return shlex.join([
+    "pipenv",
+    "run",
+    "python",
+    __file__,
+    "--destination=%s" % destination,
+    *serialized_masks
+  ])
 
 @cli.log.LoggingApp
 def generate_cropped_cell_image_cli(app):
-  try:
-    GenerateCroppedCellImageJob(
-      app.params.source_image,
-      app.params.source_mask,
-      app.params.destination,
-    ).run()
-  except Exception as exception:
-    traceback.print_exc()
+  for mask in app.params.masks:
+    source_image, source_mask = mask.split(":")
+    try:
+      GenerateCroppedCellImageJob(
+        source_image,
+        source_mask,
+        app.params.destination,
+      ).run()
+    except Exception as exception:
+      traceback.print_exc()
 
-generate_cropped_cell_image_cli.add_param("source_image")
-generate_cropped_cell_image_cli.add_param("source_mask")
-generate_cropped_cell_image_cli.add_param("destination")
+generate_cropped_cell_image_cli.add_param("masks", nargs="*")
+generate_cropped_cell_image_cli.add_param("--destination", required=True)
 
 if __name__ == "__main__":
    generate_cropped_cell_image_cli.run()

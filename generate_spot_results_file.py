@@ -31,7 +31,7 @@ class GenerateSpotResultsFileJob:
 
   @property
   def result_line_paths(self):
-    return self.source_path.glob(str(ImageFilenameGlob(suffix="_maximum_projection_nuclear_mask_???_*", extension="csv")))
+    return self.source_path.glob(str(ImageFilenameGlob(suffix="_nucleus_???_spot_*", extension="csv")))
   
   @property
   def arbitrary_result_line_path(self):

@@ -13,7 +13,7 @@ from generate_maximum_projection import generate_maximum_projection_cli_str
 from models.image_filename import *
 from models.image_filename_glob import *
 from models.paths import *
-from models.swarm_job import SwarmJob
+from models.swarm_job import SwarmJob, shard_job_params
 
 SWARM_SUBJOBS_COUNT = 5
 
@@ -34,8 +34,16 @@ class GenerateAllMaximumProjectionsJob:
   @property
   def jobs(self):
     if not hasattr(self, "_jobs"):
+      image_filename_constraints_shards = shard_job_params(
+        self.distinct_image_filename_globs,
+        SWARM_SUBJOBS_COUNT
+      )
       self._jobs = [
-        generate_maximum_projection_cli_str(self.source, image_filename_glob, self.destination) for image_filename_glob in self.distinct_image_filename_constraints
+        generate_maximum_projection_cli_str(
+          self.source,
+          image_filename_constraints_shard,
+          self.destination
+        ) for image_filename_constraints_shard in image_filename_constraints_shards
       ]
     return self._jobs
 
@@ -66,12 +74,13 @@ class GenerateAllMaximumProjectionsJob:
     return (ImageFilename.parse(image_file_path.name) for image_file_path in self.image_file_paths)
 
   @property
-  def distinct_image_filename_constraints(self):
-    if not hasattr(self, "_distinct_image_filename_constraints"):
-      self._distinct_image_filename_constraints = set((
-        ImageFilenameGlob.from_image_filename(image_filename, excluding_keys=["z"]) for image_filename in self.image_filenames
+  def distinct_image_filename_globs(self):
+    if not hasattr(self, "_distinct_image_filename_globs"):
+      self._distinct_image_filename_globs = set((
+        ImageFilenameGlob.from_image_filename(image_filename, excluding_keys=["z"])
+        for image_filename in self.image_filenames
       ))
-    return self._distinct_image_filename_constraints
+    return self._distinct_image_filename_globs
 
 @cli.log.LoggingApp
 def generate_all_maximum_projections_cli(app):

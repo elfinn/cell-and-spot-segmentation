@@ -1,6 +1,8 @@
-from PIL import Image
 import numpy
+import skimage.io
+
 from models.image_filename import ImageFilename
+
 
 class ZSlicedImage:
   def __init__(self, path):
@@ -9,14 +11,8 @@ class ZSlicedImage:
   @property
   def image(self):
     if not hasattr(self, "_image"):
-      self._image = Image.open(self.path)
+      self._image = skimage.io.imread(self.path)
     return self._image
-
-  @property
-  def numpy_array(self):
-    if not hasattr(self, "_numpy_array"):
-      self._numpy_array = numpy.asarray(self.image)
-    return self._numpy_array
 
   @property
   def z(self):

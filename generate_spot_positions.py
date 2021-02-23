@@ -1,5 +1,7 @@
 import logging
+import shlex
 import traceback
+from copy import copy
 from pathlib import Path
 
 import cli.log
@@ -15,10 +17,9 @@ from models.paths import *
 
 
 class GenerateSpotPositionsJob:
-  def __init__(self, source, destination, contrast_threshold):
+  def __init__(self, source, destination):
     self.source = source
     self.destination = destination
-    self.contrast_threshold = contrast_threshold
     self.logger = logging.getLogger()
 
   def run(self):
@@ -32,14 +33,22 @@ class GenerateSpotPositionsJob:
    return self._destination_path
 
   def destination_filename_for_spot_index(self, spot_index):
-    stem = "%s_%i" % (self.source_path.stem.replace("_cropped_", "_position_"), spot_index)
-    return self.destination_path / stem
+    destination_image_filename = copy(self.source_image_filename)
+    nucleus_index = self.source_image_filename.suffix.split("_")[-1]
+    destination_image_filename.suffix = "_nucleus_%s_spot_%i" % (nucleus_index, spot_index)
+    return self.destination_path / str(destination_image_filename)
 
   @property
   def source_path(self):
     if not hasattr(self, "_source_path"):
       self._source_path = source_path(self.source)
     return self._source_path
+
+  @property
+  def source_image_filename(self):
+    if not hasattr(self, "_source_image_filename"):
+      self._source_image_filename = ImageFilename.parse(self.source_path.name)
+    return self._source_image_filename
 
   @property
   def threshold(self):
@@ -83,26 +92,35 @@ class GenerateSpotPositionsJob:
       self._image_background = numpy.percentile(self.image, 75)
     return self._image_background
 
-def generate_spot_positions_cli_str(source, destination, contrast_threshold=None):
-  result = "pipenv run python %s '%s' '%s'" % (__file__, source, destination)
-  if contrast_threshold != None:
-    result = result + (" --contrast_threshold %s" % contrast_threshold)
-  return result
+  @property
+  def contrast_threshold(self):
+    if self.source_image_filename.c == 3:
+      return 4
+    return 2.75
+
+def generate_spot_positions_cli_str(sources, destination):
+  return shlex.join([
+    "pipenv",
+    "run",
+    "python",
+    __file__,
+    "--destination=%s" % destination,
+    *[str(source) for source in sources]
+  ])
 
 @cli.log.LoggingApp
 def generate_spot_positions_cli(app):
-  try:
-    GenerateSpotPositionsJob(
-      app.params.source,
-      app.params.destination,
-      app.params.contrast_threshold
-    ).run()
-  except Exception as exception:
-    traceback.print_exc()
+  for source in app.params.sources:
+    try:
+      GenerateSpotPositionsJob(
+        source,
+        app.params.destination,
+      ).run()
+    except Exception as exception:
+      traceback.print_exc()
 
-generate_spot_positions_cli.add_param("source", default="C:\\\\Users\\finne\\Documents\\python\\cropped_cells\\384_B07_T0001F007L01A01ZXXC03_cropped_016.npy", nargs="?")
-generate_spot_positions_cli.add_param("destination", default="C:\\\\Users\\finne\\Documents\\python\\spot_positions\\", nargs="?")
-generate_spot_positions_cli.add_param("--contrast_threshold", default=3, type=float)
+generate_spot_positions_cli.add_param("sources", nargs="*")
+generate_spot_positions_cli.add_param("--destination", required=True)
 
 if __name__ == "__main__":
    generate_spot_positions_cli.run()

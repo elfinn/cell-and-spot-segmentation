@@ -8,7 +8,7 @@ from generate_spot_result_line import generate_spot_result_line_cli_str
 from models.paths import *
 from models.image_filename import ImageFilename
 from models.image_filename_glob import ImageFilenameGlob
-from models.swarm_job import SwarmJob
+from models.swarm_job import SwarmJob, shard_job_params
 
 SWARM_SUBJOBS_COUNT = 5
 
@@ -31,14 +31,15 @@ class GenerateAllSpotResultLinesJob:
   @property
   def jobs(self):
     if not hasattr(self, "_jobs"):
+      spot_source_paths_shards = shard_job_params(self.spot_source_paths, SWARM_SUBJOBS_COUNT)
       self._jobs = [
         generate_spot_result_line_cli_str(
-          spot_source,
+          spot_source_paths_shard,
           self.z_centers_source_directory,
           self.distance_transforms_source_directory,
           self.destination
         )
-        for spot_source in self.spot_source_paths
+        for spot_source_paths_shard in spot_source_paths_shards
       ]
     return self._jobs
 
@@ -58,7 +59,7 @@ class GenerateAllSpotResultLinesJob:
 
   @property
   def spot_source_paths(self):
-    return self.spots_source_directory_path.glob(str(ImageFilenameGlob(suffix="_maximum_projection_nuclear_mask_???_*", extension="npy")))
+    return self.spots_source_directory_path.glob(str(ImageFilenameGlob(suffix="_nucleus_???_spot_*", extension="npy")))
 
 @cli.log.LoggingApp
 def generate_all_spot_result_lines_cli(app):

@@ -1,5 +1,6 @@
 import copy
 import logging
+import shlex
 import traceback
 
 import cli.log
@@ -47,21 +48,29 @@ class GenerateDistanceTransformJob:
       self._source_path = source_path(self.source)
     return self._source_path
 
-def generate_distance_transform_cli_str(source, destination):
-  return "pipenv run python %s '%s' '%s'" % (__file__, source, destination)
+def generate_distance_transform_cli_str(sources, destination):
+  return shlex.join([
+    "pipenv",
+    "run",
+    "python",
+    __file__,
+    "--destination=%s" % destination,
+    *[str(source) for source in sources]
+  ])
 
 @cli.log.LoggingApp
 def generate_distance_transform_cli(app):
-  try:
-    GenerateDistanceTransformJob(
-      app.params.source,
-      app.params.destination,
-    ).run()
-  except Exception as exception:
-    traceback.print_exc()
+  for source in app.params.sources:
+    try:
+      GenerateDistanceTransformJob(
+        source,
+        app.params.destination,
+      ).run()
+    except Exception as exception:
+      traceback.print_exc()
 
-generate_distance_transform_cli.add_param("source", default="C:\\\\Users\\finne\\Documents\\python\\MaxProjections\\AssayPlate_PerkinElmer_CellCarrier-384_B07_T0001F009L01A01ZXXC01_maximum_projection.png", nargs="?")
-generate_distance_transform_cli.add_param("destination", default="C:\\\\Users\\finne\\Documents\\python\\NucMasks", nargs="?")
+generate_distance_transform_cli.add_param("sources", nargs="*")
+generate_distance_transform_cli.add_param("--destination", required=True)
 
 if __name__ == "__main__":
    generate_distance_transform_cli.run()

@@ -1,3 +1,4 @@
+import shlex
 import logging
 import re
 import traceback
@@ -63,14 +64,14 @@ class GenerateMaximumProjectionJob:
     for source_z_sliced_image in self.source_z_sliced_images:
       if not shaped:
         shaped = True
-        shape = numpy.shape(source_z_sliced_image.numpy_array)
+        shape = numpy.shape(source_z_sliced_image.image)
         maximum_projection = numpy.empty(shape)
         summed_z_values = numpy.empty(shape)
         weighted_summed_z_values = numpy.empty(shape)
-      
-      maximum_projection = numpy.fmax(maximum_projection, source_z_sliced_image.numpy_array)
-      summed_z_values = summed_z_values + source_z_sliced_image.numpy_array
-      weighted_summed_z_values = weighted_summed_z_values + (source_z_sliced_image.numpy_array * source_z_sliced_image.z)
+
+      maximum_projection = numpy.fmax(maximum_projection, source_z_sliced_image.image)
+      summed_z_values = summed_z_values + source_z_sliced_image.image
+      weighted_summed_z_values = weighted_summed_z_values + (source_z_sliced_image.image * source_z_sliced_image.z)
 
     summed_z_values = numpy.fmax(summed_z_values, numpy.ones_like(summed_z_values))
     self._maximum_projection = maximum_projection
@@ -102,23 +103,32 @@ class GenerateMaximumProjectionJob:
   def z_center_destination_filename(self):
     return "%s%s" % (self.destination_filename_prefix, "_z_center")
 
-def generate_maximum_projection_cli_str(source_directory, filename_pattern, destination):
-  return "pipenv run python %s '%s' '%s' '%s'" % (__file__, source_directory, filename_pattern, destination)
+def generate_maximum_projection_cli_str(source_directory, filename_patterns, destination):
+  return shlex.join([
+    "pipenv",
+    "run",
+    "python",
+    __file__,
+    "--destination=%s" % destination,
+    "--source_directory=%s" % source_directory,
+    *(str(filename_pattern) for filename_pattern in filename_patterns)
+  ])
 
 @cli.log.LoggingApp
 def generate_maximum_projection_cli(app):
-  try:
-    GenerateMaximumProjectionJob(
-      app.params.source_directory,
-      app.params.filename_pattern,
-      app.params.destination
-    ).run()
-  except Exception as exception:
-    traceback.print_exc()
+  for filename_pattern in app.params.filename_patterns:
+    try:
+      GenerateMaximumProjectionJob(
+        app.params.source_directory,
+        filename_pattern,
+        app.params.destination
+      ).run()
+    except Exception as exception:
+      traceback.print_exc()
 
-generate_maximum_projection_cli.add_param("source_directory")
-generate_maximum_projection_cli.add_param("filename_pattern")
-generate_maximum_projection_cli.add_param("destination")
+generate_maximum_projection_cli.add_param("--source_directory", required=True)
+generate_maximum_projection_cli.add_param("--destination", required=True)
+generate_maximum_projection_cli.add_param("filename_patterns", nargs="*")
 
 if __name__ == "__main__":
    generate_maximum_projection_cli.run()

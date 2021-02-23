@@ -1,27 +1,27 @@
-import shlex
-import os
-import math
-from time import sleep
-import subprocess
 import logging
+import math
+import os
+import shlex
+import subprocess
+from time import sleep
 
 LOGGER = logging.getLogger()
 
-
-def shard_jobs(jobs, parallelism):
-  jobs_count = len(jobs)
-  small_shard_jobs_count = math.floor(jobs_count / parallelism)
-  large_shard_jobs_count = small_shard_jobs_count + 1
-  small_shards_count = jobs_count % parallelism
+def shard_job_params(job_params, shards_count):
+  job_params_list = list(job_params)
+  job_params_count = len(job_params_list)
+  small_shard_job_params_count = math.floor(job_params_count / shards_count)
+  large_shard_job_params_count = small_shard_job_params_count + 1
+  large_shards_count = job_params_count % shards_count
   
-  sharded_jobs = []
+  shards = []
   next_shard_start_index = 0
-  for i in range(parallelism):
-    shard_jobs_count = large_shard_jobs_count if i < small_shards_count else small_shard_jobs_count
+  for i in range(min(shards_count, job_params_count)):
+    shard_jobs_count = large_shard_job_params_count if i < large_shards_count else small_shard_job_params_count
     shard_end_index = next_shard_start_index + shard_jobs_count
-    sharded_jobs.append(jobs[next_shard_start_index:shard_end_index])
+    shards.append(job_params_list[next_shard_start_index:shard_end_index])
     next_shard_start_index = shard_end_index
-  return sharded_jobs
+  return shards
 
 class SwarmJob:
   def __init__(self, destination_path, name, jobs, parallelism):

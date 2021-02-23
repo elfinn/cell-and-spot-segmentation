@@ -1,12 +1,12 @@
-from datetime import datetime
-import cli.log
-import traceback
 import logging
+import traceback
+from datetime import datetime
+
+import cli.log
 
 from generate_nuclear_masks import generate_nuclear_masks_cli_str
-
 from models.paths import *
-from models.swarm_job import SwarmJob
+from models.swarm_job import SwarmJob, shard_job_params
 
 SWARM_SUBJOBS_COUNT = 5
 
@@ -47,8 +47,10 @@ class GenerateAllNuclearMasksJob:
   @property
   def jobs(self):
     if not hasattr(self, "_jobs"):
+      source_filenames_shards = shard_job_params(self.source_filenames, SWARM_SUBJOBS_COUNT)
       self._jobs = [
-        generate_nuclear_masks_cli_str(source_filename, self.destination) for source_filename in self.source_filenames
+        generate_nuclear_masks_cli_str(source_filenames_shard, self.destination)
+        for source_filenames_shard in source_filenames_shards
       ]
     return self._jobs
 

@@ -6,7 +6,7 @@ import logging
 from generate_distance_transform import generate_distance_transform_cli_str
 
 from models.paths import *
-from models.swarm_job import SwarmJob
+from models.swarm_job import SwarmJob, shard_job_params
 
 SWARM_SUBJOBS_COUNT = 5
 
@@ -27,10 +27,9 @@ class GenerateAllDistanceTransformsJob:
   @property
   def jobs(self):
     if not hasattr(self, "_jobs"):
+      shards = shard_job_params(self.nuclear_mask_paths, SWARM_SUBJOBS_COUNT)
       self._jobs = [
-        generate_distance_transform_cli_str(nuclear_mask_path, self.destination)
-        for nuclear_mask_path
-        in self.nuclear_mask_paths
+        generate_distance_transform_cli_str(shard, self.destination) for shard in shards
       ]
     return self._jobs
 

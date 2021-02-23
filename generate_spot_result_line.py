@@ -1,3 +1,4 @@
+import shlex
 import csv
 import logging
 import re
@@ -11,7 +12,7 @@ import numpy
 from models.image_filename import ImageFilename
 from models.paths import *
 
-SPOT_RESULT_FILE_SUFFIX_RE = re.compile("_maximum_projection_nuclear_mask_(?P<nucleus_index>\d{3})_(?P<spot_index>\d+)")
+SPOT_RESULT_FILE_SUFFIX_RE = re.compile("_nucleus_(?P<nucleus_index>\d{3})_spot_(?P<spot_index>\d+)")
 
 class GenerateSpotResultLineJob:
   def __init__(self, spot_source, z_centers_source_directory, distance_transforms_source_directory, destination):
@@ -164,26 +165,35 @@ class GenerateSpotResultLineJob:
   def center_r(self):
     return self.distance_transform_image[self.pixel_center]
 
-def generate_spot_result_line_cli_str(spot_source, z_centers_source_directory, distance_transforms_source_directory, destination):
-  result = "pipenv run python %s '%s' '%s' '%s' '%s'" % (__file__, spot_source, z_centers_source_directory, distance_transforms_source_directory, destination)
-  return result
+def generate_spot_result_line_cli_str(spot_sources, z_centers_source_directory, distance_transforms_source_directory, destination):
+  return shlex.join([
+    "pipenv",
+    "run",
+    "python",
+    __file__,
+    "--z_centers_source_directory=%s" % z_centers_source_directory,
+    "--distance_transforms_source_directory=%s" % distance_transforms_source_directory,
+    "--destination=%s" % destination,
+    *[str(spot_source) for spot_source in spot_sources]
+  ])
 
 @cli.log.LoggingApp
 def generate_spot_result_line_cli(app):
-  try:
-    GenerateSpotResultLineJob(
-      app.params.spot_source,
-      app.params.z_centers_source_directory,
-      app.params.distance_transforms_source_directory,
-      app.params.destination,
-    ).run()
-  except Exception as exception:
-    traceback.print_exc()
+  for spot_source in app.params.spot_sources:
+    try:
+      GenerateSpotResultLineJob(
+        spot_source,
+        app.params.z_centers_source_directory,
+        app.params.distance_transforms_source_directory,
+        app.params.destination,
+      ).run()
+    except Exception as exception:
+      traceback.print_exc()
 
-generate_spot_result_line_cli.add_param("spot_source", default="C:\\\\Users\\finne\\Documents\\python\\cropped_cells\\384_B07_T0001F007L01A01ZXXC03_cropped_016.npy", nargs="?")
-generate_spot_result_line_cli.add_param("z_centers_source_directory", default="todo", nargs="?")
-generate_spot_result_line_cli.add_param("distance_transforms_source_directory", default="todo", nargs="?")
-generate_spot_result_line_cli.add_param("destination", default="C:\\\\Users\\finne\\Documents\\python\\spot_positions\\", nargs="?")
+generate_spot_result_line_cli.add_param("spot_sources", nargs="*")
+generate_spot_result_line_cli.add_param("--z_centers_source_directory", required=True)
+generate_spot_result_line_cli.add_param("--distance_transforms_source_directory", required=True)
+generate_spot_result_line_cli.add_param("--destination", required=True)
 
 if __name__ == "__main__":
    generate_spot_result_line_cli.run()

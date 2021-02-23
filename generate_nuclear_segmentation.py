@@ -1,3 +1,4 @@
+import shlex
 import logging
 import re
 import traceback
@@ -82,25 +83,32 @@ class GenerateNuclearSegmentationJob:
     return self._cellpose_filtered
   
 
-def generate_nuclear_segmentation_cli_str(source, destination, diameter):
-  result = "pipenv run python %s '%s' '%s'" % (__file__, source, destination)
-  if diameter:
-    result = "%s --diameter %i" % (result, diameter)
-  return result
+def generate_nuclear_segmentation_cli_str(sources, destination, diameter):
+  diameter_arguments = ["--diameter=%i" % diameter] if diameter != None else []
+  return shlex.join([
+    "pipenv",
+    "run",
+    "python",
+    __file__,
+    "--destination=%s" % destination,
+    *diameter_arguments,
+    *[str(source) for source in sources]
+  ])
 
 @cli.log.LoggingApp
 def generate_nuclear_segmentation_cli(app):
-  try:
-    GenerateNuclearSegmentationJob(
-      app.params.source,
-      app.params.destination,
-      app.params.diameter
-    ).run()
-  except Exception as exception:
-    traceback.print_exc()
+  for source in app.params.sources:
+    try:
+      GenerateNuclearSegmentationJob(
+        source,
+        app.params.destination,
+        app.params.diameter
+      ).run()
+    except Exception as exception:
+      traceback.print_exc()
 
-generate_nuclear_segmentation_cli.add_param("source", default="C:\\\\Users\\finne\\Documents\\python\\MaxProjections\\AssayPlate_PerkinElmer_CellCarrier-384_B07_T0001F009L01A01ZXXC01_maximum_projection.png", nargs="?")
-generate_nuclear_segmentation_cli.add_param("destination", default="C:\\\\Users\\finne\\Documents\\python\\NucMasks", nargs="?")
+generate_nuclear_segmentation_cli.add_param("sources", nargs="*")
+generate_nuclear_segmentation_cli.add_param("--destination", required=True)
 generate_nuclear_segmentation_cli.add_param("--diameter", type=int, default=100)
 
 if __name__ == "__main__":

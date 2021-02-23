@@ -1,3 +1,4 @@
+import shlex
 import traceback
 
 import cli.log
@@ -52,21 +53,29 @@ class GenerateNuclearMasksJob:
       ]
     return self._nuclear_masks
 
-def generate_nuclear_masks_cli_str(source, destination):
-  return "pipenv run python %s '%s' '%s'" % (__file__, source, destination)
+def generate_nuclear_masks_cli_str(sources, destination):
+  return shlex.join([
+    "pipenv",
+    "run",
+    "python",
+    __file__,
+    "--destination=%s" % destination,
+    *[str(source) for source in sources]
+  ])
 
 @cli.log.LoggingApp
 def generate_nuclear_masks_cli(app):
-  try:
-    GenerateNuclearMasksJob(
-      app.params.source,
-      app.params.destination,
-    ).run()
-  except Exception as exception:
-    traceback.print_exc()
+  for source in app.params.sources:
+    try:
+      GenerateNuclearMasksJob(
+        source,
+        app.params.destination,
+      ).run()
+    except Exception as exception:
+      traceback.print_exc()
 
-generate_nuclear_masks_cli.add_param("source", default="C:\\\\Users\\finne\\Documents\\python\\MaxProjections\\AssayPlate_PerkinElmer_CellCarrier-384_B07_T0001F009L01A01ZXXC01_maximum_projection.png", nargs="?")
-generate_nuclear_masks_cli.add_param("destination", default="C:\\\\Users\\finne\\Documents\\python\\NucMasks", nargs="?")
+generate_nuclear_masks_cli.add_param("sources", nargs="*")
+generate_nuclear_masks_cli.add_param("--destination", required=True)
 
 if __name__ == "__main__":
    generate_nuclear_masks_cli.run()

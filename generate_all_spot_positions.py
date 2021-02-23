@@ -6,7 +6,7 @@ import logging
 from generate_spot_positions import generate_spot_positions_cli_str
 
 from models.paths import *
-from models.swarm_job import SwarmJob
+from models.swarm_job import SwarmJob, shard_job_params
 from models.image_filename import ImageFilename
 from models.image_filename_glob import ImageFilenameGlob
 
@@ -29,22 +29,12 @@ class GenerateAllSpotPositionsJob:
   @property
   def jobs(self):
     if not hasattr(self, "_jobs"):
+      nuclear_mask_paths_shards = shard_job_params(self.nuclear_mask_paths, SWARM_SUBJOBS_COUNT)
       self._jobs = [
-        generate_spot_positions_cli_str(
-          nuclear_mask_path,
-          self.destination,
-          contrast_threshold=self.contrast_threshold_for_nuclear_mask_path(nuclear_mask_path)
-        )
-        for nuclear_mask_path
-        in self.nuclear_mask_paths
+        generate_spot_positions_cli_str(nuclear_mask_paths_shard, self.destination)
+        for nuclear_mask_paths_shard in nuclear_mask_paths_shards
       ]
     return self._jobs
-
-  def contrast_threshold_for_nuclear_mask_path(self, nuclear_mask_path):
-    c = ImageFilename.parse(nuclear_mask_path.name).c
-    if c == 3:
-      return 4
-    return None
 
   @property
   def job_name(self):

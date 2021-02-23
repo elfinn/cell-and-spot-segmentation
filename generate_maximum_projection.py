@@ -64,10 +64,9 @@ class GenerateMaximumProjectionJob:
     for source_z_sliced_image in self.source_z_sliced_images:
       if not shaped:
         shaped = True
-        shape = numpy.shape(source_z_sliced_image.image)
-        maximum_projection = numpy.empty(shape)
-        summed_z_values = numpy.empty(shape)
-        weighted_summed_z_values = numpy.empty(shape)
+        maximum_projection = numpy.empty_like(source_z_sliced_image.image)
+        summed_z_values = numpy.empty_like(source_z_sliced_image.image)
+        weighted_summed_z_values = numpy.empty_like(source_z_sliced_image.image)
 
       maximum_projection = numpy.fmax(maximum_projection, source_z_sliced_image.image)
       summed_z_values = summed_z_values + source_z_sliced_image.image
@@ -75,7 +74,7 @@ class GenerateMaximumProjectionJob:
 
     summed_z_values = numpy.fmax(summed_z_values, numpy.ones_like(summed_z_values))
     self._maximum_projection = maximum_projection
-    self._z_center = (weighted_summed_z_values/summed_z_values).astype(numpy.float16)
+    self._z_center = (weighted_summed_z_values / summed_z_values).astype(numpy.float16)
 
   @property
   def source_z_sliced_images(self):

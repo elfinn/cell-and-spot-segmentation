@@ -136,20 +136,20 @@ class GenerateCroppedCellImageJob:
     return self._masked_cropped_image
           
 def generate_cropped_cell_image_cli_str(masks, destination):
-  serialized_masks = ("%s:%s" % mask for mask in masks)
+  serialized_masks_params = (str(param) for image_or_mask_param in masks for param in image_or_mask_param)
   return shlex.join([
     "pipenv",
     "run",
     "python",
     __file__,
     "--destination=%s" % destination,
-    *serialized_masks
+    *serialized_masks_params
   ])
 
 @cli.log.LoggingApp
 def generate_cropped_cell_image_cli(app):
-  for mask in app.params.masks:
-    source_image, source_mask = mask.split(":")
+  for mask_pair_start_index in (index * 2 for index in range(int(len(app.params.masks) / 2))):
+    source_image, source_mask = app.params.masks[mask_pair_start_index:mask_pair_start_index + 2]
     try:
       GenerateCroppedCellImageJob(
         source_image,

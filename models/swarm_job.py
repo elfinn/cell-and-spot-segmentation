@@ -14,14 +14,12 @@ def shard_job_params(job_params, shards_count):
   large_shard_job_params_count = small_shard_job_params_count + 1
   large_shards_count = job_params_count % shards_count
   
-  shards = []
   next_shard_start_index = 0
   for i in range(min(shards_count, job_params_count)):
     shard_jobs_count = large_shard_job_params_count if i < large_shards_count else small_shard_job_params_count
     shard_end_index = next_shard_start_index + shard_jobs_count
-    shards.append(job_params_list[next_shard_start_index:shard_end_index])
+    yield job_params_list[next_shard_start_index:shard_end_index]
     next_shard_start_index = shard_end_index
-  return shards
 
 class SwarmJob:
   def __init__(self, destination_path, name, jobs, parallelism):

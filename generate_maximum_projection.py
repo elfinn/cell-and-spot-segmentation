@@ -93,7 +93,7 @@ class GenerateMaximumProjectionJob:
 
   @property
   def destination_filename_prefix(self):
-    return Path(self.filename_pattern.replace("?", "X")).stem
+    return Path(self.filename_pattern.replace("?", "X").replace("*", "X")).stem
   
   @property
   def maximum_projection_destination_filename(self):

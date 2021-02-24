@@ -17,9 +17,10 @@ from models.paths import *
 
 
 class GenerateSpotPositionsJob:
-  def __init__(self, source, destination):
+  def __init__(self, source, destination, user_determined_contrast_threshold = None):
     self.source = source
     self.destination = destination
+    self.user_determined_contrast_threshold = user_determined_contrast_threshold
     self.logger = logging.getLogger()
 
   def run(self):
@@ -94,6 +95,8 @@ class GenerateSpotPositionsJob:
 
   @property
   def contrast_threshold(self):
+    if self.user_determined_contrast_threshold != None:
+      return self.user_determined_contrast_threshold
     if self.source_image_filename.c == 3:
       return 4
     return 2.75

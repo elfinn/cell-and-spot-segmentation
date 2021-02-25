@@ -17,10 +17,12 @@ from models.paths import *
 
 
 class GenerateSpotPositionsJob:
-  def __init__(self, source, destination, user_determined_contrast_threshold = None):
+  def __init__(self, source, destination, user_determined_contrast_threshold = None, user_determined_radius = None, user_determined_global_threshold = None):
     self.source = source
     self.destination = destination
     self.user_determined_contrast_threshold = user_determined_contrast_threshold
+    self.user_determined_radius = user_determined_radius
+    self.user_determined_global_threshold = user_determined_global_threshold
     self.logger = logging.getLogger()
 
   def run(self):
@@ -66,24 +68,48 @@ class GenerateSpotPositionsJob:
   @property
   def filtered_image(self):
     if not hasattr(self, "_filtered_image"):
-        self._filtered_image = skimage.filters.gaussian(self.image, sigma=2)
+        self._filtered_image = skimage.filters.gaussian(self.image, sigma=self.radius)
     return self._filtered_image
+
+  @property
+  def raw_spots(self):
+    if not hasattr(self, "_raw_spots"):
+      self._raw_spots = skimage.feature.blob_log(self.filtered_image, min_sigma=0.3, max_sigma=0.3, threshold=self.threshold)
+    return self._raw_spots
+
+  @property
+  def global_filtered_spots(self):
+    if not hasattr(self, "_global_filtered_spots"):
+      self._global_filtered_spots = [
+        (int(x), int(y))
+        for x, y, _sigma
+        in self.raw_spots 
+        if self.image[int(x), int(y)] > self.global_threshold
+      ]
+    return self._global_filtered_spots
 
   @property
   def spots(self):
     if not hasattr(self, "_spots"):
       self._spots = [
-        self.find_spot_center_of_mass((int(x), int(y)))
-        for x, y, _sigma
-        in skimage.feature.blob_log(self.filtered_image, min_sigma=0.3, max_sigma=0.3, threshold=self.threshold)
+        self.find_spot_center_of_mass(spot)
+        for spot
+        in self.global_filtered_spots
       ]
     return self._spots
 
   def find_spot_center_of_mass(self, integer_spot):
+    local_box_x_min = max(0, integer_spot[0]-10)
+    local_box_y_min = max(0, integer_spot[1]-10)
+    local_box_x_max = min(integer_spot[0]+10, numpy.shape(self.image)[0])
+    local_box_y_max = min(integer_spot[1]+10, numpy.shape(self.image)[1])
+    
+    local_background = numpy.percentile(self.image[local_box_x_min:local_box_x_max, local_box_y_min:local_box_y_max], 25)
+
     marker = skimage.segmentation.flood(
       self.image,
       integer_spot,
-      tolerance=(self.image[integer_spot] - self.image_background) / 2
+      tolerance=(self.image[integer_spot] - local_background) / 2
     )
     return scipy.ndimage.center_of_mass(self.image, marker)
   
@@ -100,6 +126,21 @@ class GenerateSpotPositionsJob:
     if self.source_image_filename.c == 3:
       return 4
     return 2.75
+
+  @property
+  def radius(self):
+    if self.user_determined_radius != None:
+      return self.user_determined_radius
+    if self.source_image_filename.c == 3:
+      return 3
+    return 1
+
+  @property
+  def global_threshold(self):
+    if self.user_determined_global_threshold != None:
+      return self.user_determined_global_threshold
+    return 0
+
 
 def generate_spot_positions_cli_str(sources, destination):
   return shlex.join([

@@ -65,7 +65,7 @@ class GenerateNuclearSegmentationJob:
   @property
   def image(self):
     if not hasattr(self, "_image"):
-      self._image = skimage.io.imread(self.source_path)
+      self._image = skimage.io.imread(self.source_path, as_gray=True)
     return self._image
 
   @property

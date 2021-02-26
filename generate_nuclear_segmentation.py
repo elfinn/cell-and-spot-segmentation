@@ -72,13 +72,13 @@ class GenerateNuclearSegmentationJob:
   def cellpose_result(self):
     if not hasattr(self, "_cellpose_result"):
       model = models.Cellpose(model_type = "nuclei")
-      self._cellpose_result = model.eval(self.image, diameter=self.diameter, channels=[[0,0]])
+      self._cellpose_result = model.eval(self.image, diameter=self.diameter, channels=[[0,0]], resample=True)
     return self._cellpose_result
 
   @property
   def cellpose_filtered(self):
     if not hasattr(self, "_cellpose_filtered"):
-      dilated = skimage.segmentation.expand_labels(self.cellpose_result[0], distance=1)
+      dilated = skimage.segmentation.expand_labels(self.cellpose_result[0], distance=3)
       self._cellpose_filtered = skimage.segmentation.clear_border(dilated)
     return self._cellpose_filtered
   

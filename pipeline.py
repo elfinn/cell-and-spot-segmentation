@@ -17,9 +17,10 @@ from models.paths import *
 
 
 class PipelineJob:
-  def __init__(self, source, destination):
+  def __init__(self, source, destination, generate_spot_positions_config=None):
     self.source = source
     self.destination = destination
+    self.generate_spot_positions_config = generate_spot_positions_config
   
   def run(self):
     GenerateAllMaximumProjectionsJob(self.source_path, self.maximium_projections_and_z_centers_path).run()
@@ -39,7 +40,7 @@ class PipelineJob:
     generate_distance_transforms_thread.join()
     generate_all_cropped_cell_images_thread.join()
 
-    GenerateAllSpotPositionsJob(self.cropped_cell_images_path, self.spot_positions_path).run()
+    GenerateAllSpotPositionsJob(self.cropped_cell_images_path, self.spot_positions_path, config=self.generate_spot_positions_config).run()
     GenerateAllSpotResultLinesJob(
       self.spot_positions_path,
       self.cropped_cell_images_path,
@@ -90,17 +91,19 @@ class PipelineJob:
     return self.destination_path / "spot_result_lines"
   
 @cli.log.LoggingApp
-def generate_spot_results_file_cli(app):
+def pipeline_cli(app):
   try:
     PipelineJob(
       app.params.source,
-      app.params.destination
+      app.params.destination,
+      generate_spot_positions_config=app.params.generate_spot_positions_config
     ).run()
   except Exception as exception:
     traceback.print_exc()
 
-generate_spot_results_file_cli.add_param("source")
-generate_spot_results_file_cli.add_param("destination")
+pipeline_cli.add_param("source")
+pipeline_cli.add_param("destination")
+pipeline_cli.add_param("--generate_spot_positions_config")
 
 if __name__ == "__main__":
-   generate_spot_results_file_cli.run()
+   pipeline_cli.run()

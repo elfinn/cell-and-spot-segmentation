@@ -13,9 +13,10 @@ from models.image_filename_glob import ImageFilenameGlob
 SWARM_SUBJOBS_COUNT = 5
 
 class GenerateAllSpotPositionsJob:
-  def __init__(self, source, destination):
+  def __init__(self, source, destination, config=None):
     self.source = source
     self.destination = destination
+    self.config = config
     self.logger = logging.getLogger()
 
   def run(self):
@@ -31,7 +32,7 @@ class GenerateAllSpotPositionsJob:
     if not hasattr(self, "_jobs"):
       nuclear_mask_paths_shards = shard_job_params(self.nuclear_mask_paths, SWARM_SUBJOBS_COUNT)
       self._jobs = [
-        generate_spot_positions_cli_str(nuclear_mask_paths_shard, self.destination)
+        generate_spot_positions_cli_str(nuclear_mask_paths_shard, self.destination, config=self.config)
         for nuclear_mask_paths_shard in nuclear_mask_paths_shards
       ]
     return self._jobs
@@ -64,12 +65,14 @@ def generate_all_spot_positions_cli(app):
     GenerateAllSpotPositionsJob(
       app.params.source,
       app.params.destination,
+      config=app.params.config
     ).run()
   except Exception as exception:
     traceback.print_exc()
 
 generate_all_spot_positions_cli.add_param("source")
 generate_all_spot_positions_cli.add_param("destination")
+generate_all_spot_positions_cli.add_param("--config")
 
 if __name__ == "__main__":
    generate_all_spot_positions_cli.run()

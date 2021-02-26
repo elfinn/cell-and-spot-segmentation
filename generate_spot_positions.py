@@ -1,8 +1,10 @@
+import json
 import logging
 import shlex
 import traceback
 from copy import copy
 from pathlib import Path
+from functools import lru_cache
 
 import cli.log
 import numpy
@@ -12,17 +14,42 @@ import skimage.filters
 import skimage.io
 import skimage.segmentation
 
+from models.generate_spot_positions_config import GenerateSpotPositionsConfig
 from models.image_filename import ImageFilename
 from models.paths import *
 
 
+@lru_cache(maxsize=1)
+def load_generate_spot_positions_configs(config_path):
+  if config_path == None:
+    return {}
+  with open(config_path) as json_file:
+    json_params_list = json.load(json_file)
+    generate_spot_positions_configs = [
+      GenerateSpotPositionsConfig.from_json_params(json_params)
+      for json_params in json_params_list
+    ]
+    return {
+      generate_spot_positions_config.channel:generate_spot_positions_config
+      for generate_spot_positions_config in generate_spot_positions_configs
+    }
+
 class GenerateSpotPositionsJob:
-  def __init__(self, source, destination, user_determined_contrast_threshold = None, user_determined_radius = None, user_determined_global_threshold = None):
+  def __init__(
+    self,
+    source,
+    destination,
+    user_determined_local_contrast_threshold=None,
+    user_determined_radius=None,
+    user_determined_global_threshold=None,
+    config=None
+  ):
     self.source = source
     self.destination = destination
-    self.user_determined_contrast_threshold = user_determined_contrast_threshold
+    self.user_determined_local_contrast_threshold = user_determined_local_contrast_threshold
     self.user_determined_radius = user_determined_radius
     self.user_determined_global_threshold = user_determined_global_threshold
+    self.config = config
     self.logger = logging.getLogger()
 
   def run(self):
@@ -56,7 +83,7 @@ class GenerateSpotPositionsJob:
   @property
   def threshold(self):
     if not hasattr(self, "_threshold"):
-      self._threshold = self.image_background * self.contrast_threshold
+      self._threshold = self.image_background * self.local_contrast_threshold
     return self._threshold
 
   @property
@@ -68,7 +95,7 @@ class GenerateSpotPositionsJob:
   @property
   def filtered_image(self):
     if not hasattr(self, "_filtered_image"):
-        self._filtered_image = skimage.filters.gaussian(self.image, sigma=self.radius)
+        self._filtered_image = skimage.filters.gaussian(self.image, sigma=self.peak_radius)
     return self._filtered_image
 
   @property
@@ -84,7 +111,7 @@ class GenerateSpotPositionsJob:
         (int(x), int(y))
         for x, y, _sigma
         in self.raw_spots 
-        if self.image[int(x), int(y)] > self.global_threshold
+        if self.image[int(x), int(y)] > self.global_contrast_threshold
       ]
     return self._global_filtered_spots
 
@@ -120,35 +147,49 @@ class GenerateSpotPositionsJob:
     return self._image_background
 
   @property
-  def contrast_threshold(self):
-    if self.user_determined_contrast_threshold != None:
-      return self.user_determined_contrast_threshold
+  def local_contrast_threshold(self):
+    if self.user_determined_local_contrast_threshold != None:
+      return self.user_determined_local_contrast_threshold
+    if self.channel_specific_config != None:
+      return self.channel_specific_config.local_contrast_threshold
     if self.source_image_filename.c == 3:
       return 4
     return 2.75
 
   @property
-  def radius(self):
+  def peak_radius(self):
     if self.user_determined_radius != None:
       return self.user_determined_radius
+    if self.channel_specific_config != None:
+      return self.channel_specific_config.peak_radius
     if self.source_image_filename.c == 3:
       return 3
     return 1
 
   @property
-  def global_threshold(self):
+  def global_contrast_threshold(self):
     if self.user_determined_global_threshold != None:
       return self.user_determined_global_threshold
+    if self.channel_specific_config != None:
+      return self.channel_specific_config.global_contrast_threshold
     return 0
 
+  @property
+  def channel_specific_config(self):
+    if self.config != None:
+      configs = load_generate_spot_positions_configs(self.config)
+      if self.source_image_filename.c in configs:
+        return configs[self.source_image_filename.c]
 
-def generate_spot_positions_cli_str(sources, destination):
+def generate_spot_positions_cli_str(sources, destination, config=None):
+  config_arguments = ["--config=%s" % config] if config != None else []
   return shlex.join([
     "pipenv",
     "run",
     "python",
     __file__,
     "--destination=%s" % destination,
+    *config_arguments,
     *[str(source) for source in sources]
   ])
 
@@ -159,12 +200,14 @@ def generate_spot_positions_cli(app):
       GenerateSpotPositionsJob(
         source,
         app.params.destination,
+        config=app.params.config
       ).run()
     except Exception as exception:
       traceback.print_exc()
 
 generate_spot_positions_cli.add_param("sources", nargs="*")
 generate_spot_positions_cli.add_param("--destination", required=True)
+generate_spot_positions_cli.add_param("--config")
 
 if __name__ == "__main__":
    generate_spot_positions_cli.run()

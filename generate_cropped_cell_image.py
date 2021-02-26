@@ -18,8 +18,8 @@ from models.paths import *
 
 @lru_cache(maxsize=1)
 def load_source_image(source_image_path):
-  if source_image_path.suffix == ".png":
-    return skimage.io.imread(source_image_path, as_gray=True)
+  if source_image_path.suffix == ".tif":
+    return skimage.io.imread(source_image_path)
   else:
     return numpy.load(source_image_path)
 
@@ -127,7 +127,7 @@ class GenerateCroppedCellImageJob:
   @property
   def masked_cropped_image(self):
     if not hasattr(self, "_masked_cropped_image"):
-      if self.source_image_filename.extension == "png":
+      if self.source_image_filename.extension == "tif":
         normed_image = skimage.exposure.rescale_intensity(self.rect_cropped_image, in_range=(self.min_in_nucleus, self.max_in_nucleus), out_range=(0,1))
         inverted_image = skimage.util.invert(normed_image)
         self._masked_cropped_image = inverted_image * self.nuclear_mask

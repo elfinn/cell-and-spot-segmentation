@@ -69,7 +69,7 @@ class GenerateAllCroppedCellImagesJob:
       self._source_image_paths = [
         image_file_path
         for image_file_path
-        in self.source_images_path.glob(str(ImageFilenameGlob(suffix="_maximum_projection", extension="png")))
+        in self.source_images_path.glob(str(ImageFilenameGlob(suffix="_maximum_projection", extension="tif")))
         if ImageFilename.parse(image_file_path.name).c != 1
       ] + [
         z_center_file_path

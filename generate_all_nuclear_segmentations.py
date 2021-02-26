@@ -52,7 +52,7 @@ class GenerateAllNuclearSegmentationsJob:
   
   @property
   def source_filenames(self):
-    return self.source_path.glob("*ZXXC01_maximum_projection.png")
+    return self.source_path.glob("*ZXXC01_maximum_projection.tif")
 
   @property
   def destination_path(self):

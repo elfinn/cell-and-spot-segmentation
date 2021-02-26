@@ -5,9 +5,9 @@ import traceback
 from pathlib import Path
 
 import cli.log
-import matplotlib.pyplot as plt
 import numpy
 import skimage.exposure
+import skimage.io
 
 from models.paths import *
 from models.z_sliced_image import ZSlicedImage
@@ -21,7 +21,7 @@ class GenerateMaximumProjectionJob:
     self.logger = logging.getLogger()
 
   def run(self):
-    plt.imsave(str(self.destination_path / self.maximum_projection_destination_filename), self.maximum_projection, cmap="Greys")
+    skimage.io.imsave(str(self.destination_path / self.maximum_projection_destination_filename), self.maximum_projection)
     numpy.save(str(self.destination_path / self.z_center_destination_filename), self.z_center)
 
   @property
@@ -73,7 +73,7 @@ class GenerateMaximumProjectionJob:
       summed_z_values = summed_z_values + source_z_sliced_image.image
       weighted_summed_z_values = weighted_summed_z_values + (source_z_sliced_image.image * source_z_sliced_image.z)
 
-    self._maximum_projection = skimage.exposure.rescale_intensity(maximum_projection, in_range=(numpy.amin(maximum_projection), numpy.amax(maximum_projection)), out_range=(0,255))
+    self._maximum_projection = maximum_projection
 
     zero_adjusted_summed_z_values = summed_z_values + ((summed_z_values == 0) * numpy.ones_like(summed_z_values))
     self._z_center = (weighted_summed_z_values / zero_adjusted_summed_z_values).astype(numpy.float16)
@@ -98,7 +98,7 @@ class GenerateMaximumProjectionJob:
   
   @property
   def maximum_projection_destination_filename(self):
-    return "%s%s" % (self.destination_filename_prefix, "_maximum_projection.png")
+    return "%s%s" % (self.destination_filename_prefix, "_maximum_projection.tif")
 
   @property
   def z_center_destination_filename(self):

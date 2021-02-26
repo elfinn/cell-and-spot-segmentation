@@ -72,7 +72,7 @@ class GenerateMaximumProjectionJob:
       summed_z_values = summed_z_values + source_z_sliced_image.image
       weighted_summed_z_values = weighted_summed_z_values + (source_z_sliced_image.image * source_z_sliced_image.z)
 
-    self._maximum_projection = maximum_projection
+    self._maximum_projection = rescale_intensity(maximum_projection)
 
     zero_adjusted_summed_z_values = summed_z_values + ((summed_z_values == 0) * numpy.ones_like(summed_z_values))
     self._z_center = (weighted_summed_z_values / zero_adjusted_summed_z_values).astype(numpy.float16)

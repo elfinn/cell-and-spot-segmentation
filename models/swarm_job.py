@@ -3,6 +3,7 @@ import math
 import os
 import shlex
 import subprocess
+import enum
 from time import sleep
 
 LOGGER = logging.getLogger()
@@ -21,7 +22,13 @@ def shard_job_params(job_params, shards_count):
     yield job_params_list[next_shard_start_index:shard_end_index]
     next_shard_start_index = shard_end_index
 
+class RunStrategy(enum.Enum):
+  LOCAL = enum.auto()
+  SWARM = enum.auto()
+
 class SwarmJob:
+  run_strategy = RunStrategy.SWARM if os.environ.get('ENVIRONMENT') == 'production' else RunStrategy.LOCAL
+
   def __init__(self, destination_path, name, jobs, parallelism):
     self.destination_path = destination_path
     self.name = name
@@ -29,7 +36,7 @@ class SwarmJob:
     self.parallelism = parallelism
 
   def run(self):
-    if os.environ.get('ENVIRONMENT') == 'development':
+    if self.run_strategy == RunStrategy.LOCAL:
       LOGGER.warning("running %s in development mode", self.name)
       for job in self.jobs:
         LOGGER.warning("command: %s", job)

@@ -72,7 +72,7 @@ class GenerateNuclearSegmentationJob:
   def cellpose_result(self):
     if not hasattr(self, "_cellpose_result"):
       model = models.Cellpose(model_type = "nuclei")
-      self._cellpose_result = model.eval(self.image, diameter=self.diameter, channels=[[0,0]], invert=True)
+      self._cellpose_result = model.eval(self.image, diameter=self.diameter, channels=[[0,0]])
     return self._cellpose_result
 
   @property

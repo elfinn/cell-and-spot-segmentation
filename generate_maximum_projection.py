@@ -40,6 +40,7 @@ class GenerateMaximumProjectionJob:
 
   @property
   def source_file_paths(self):
+    print("looking for source files with pattern %s"%self.filename_pattern)
     return self.source_directory_path.glob(self.filename_pattern)
 
   @property
@@ -65,22 +66,27 @@ class GenerateMaximumProjectionJob:
     for source_z_sliced_image in self.source_z_sliced_images:
       if not shaped:
         shaped = True
-        maximum_projection = numpy.empty_like(source_z_sliced_image.image)
-        summed_z_values = numpy.empty_like(source_z_sliced_image.image)
-        weighted_summed_z_values = numpy.empty_like(source_z_sliced_image.image)
+        maximum_projection = numpy.zeros_like(source_z_sliced_image.image)
+        summed_z_values = numpy.int32(numpy.zeros_like(source_z_sliced_image.image))
+        weighted_summed_z_values = numpy.int32(numpy.zeros_like(source_z_sliced_image.image))
 
       maximum_projection = numpy.fmax(maximum_projection, source_z_sliced_image.image)
       summed_z_values = summed_z_values + source_z_sliced_image.image
       weighted_summed_z_values = weighted_summed_z_values + (source_z_sliced_image.image * source_z_sliced_image.z)
+      print('Z slice: %s' % (source_z_sliced_image.z))
+      print('Sum min: %s, max: %s' % (numpy.amin(summed_z_values), numpy.amax(summed_z_values)))
+      print('Weighted sum range: %s, %s' % (numpy.amin(weighted_summed_z_values), numpy.amax(weighted_summed_z_values)))
 
     self._maximum_projection = maximum_projection
 
     zero_adjusted_summed_z_values = summed_z_values + ((summed_z_values == 0) * numpy.ones_like(summed_z_values))
-    self._z_center = (weighted_summed_z_values / zero_adjusted_summed_z_values).astype(numpy.float16)
+    zero_adjusted_weighted_summed_z_values = weighted_summed_z_values + ((weighted_summed_z_values == 0) * numpy.ones_like(weighted_summed_z_values))
+    self._z_center = (zero_adjusted_weighted_summed_z_values / zero_adjusted_summed_z_values).astype(numpy.float16)
 
   @property
   def source_z_sliced_images(self):
     return (ZSlicedImage(source_file_path) for source_file_path in self.source_file_paths)
+
 
   @property
   def destination_path(self):

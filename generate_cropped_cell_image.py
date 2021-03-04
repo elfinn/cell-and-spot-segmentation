@@ -21,7 +21,7 @@ def load_source_image(source_image_path):
   if source_image_path.suffix == ".tif":
     return skimage.io.imread(source_image_path)
   else:
-    return numpy.load(source_image_path)
+    return numpy.load(source_image_path, allow_pickle=True)
 
 class GenerateCroppedCellImageJob:
   def __init__(self, source_image, source_mask, destination):
@@ -129,8 +129,7 @@ class GenerateCroppedCellImageJob:
     if not hasattr(self, "_masked_cropped_image"):
       if self.source_image_filename.extension == "tif":
         normed_image = skimage.exposure.rescale_intensity(self.rect_cropped_image, in_range=(self.min_in_nucleus, self.max_in_nucleus), out_range=(0,1))
-        inverted_image = skimage.util.invert(normed_image)
-        self._masked_cropped_image = inverted_image * self.nuclear_mask
+        self._masked_cropped_image = normed_image * self.nuclear_mask
       else:
         self._masked_cropped_image = self.rect_cropped_image * self.nuclear_mask
     return self._masked_cropped_image

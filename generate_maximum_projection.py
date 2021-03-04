@@ -73,9 +73,6 @@ class GenerateMaximumProjectionJob:
       maximum_projection = numpy.fmax(maximum_projection, source_z_sliced_image.image)
       summed_z_values = summed_z_values + source_z_sliced_image.image
       weighted_summed_z_values = weighted_summed_z_values + (source_z_sliced_image.image * source_z_sliced_image.z)
-      print('Z slice: %s' % (source_z_sliced_image.z))
-      print('Sum min: %s, max: %s' % (numpy.amin(summed_z_values), numpy.amax(summed_z_values)))
-      print('Weighted sum range: %s, %s' % (numpy.amin(weighted_summed_z_values), numpy.amax(weighted_summed_z_values)))
 
     self._maximum_projection = maximum_projection
 

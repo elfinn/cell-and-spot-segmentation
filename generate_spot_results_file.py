@@ -19,7 +19,8 @@ class GenerateSpotResultsFileJob:
         with open(result_line_path) as result_line_file:
           next(result_line_file)
           for line in result_line_file:
-            destination_file.write(line)
+            if not line.isspace():
+              destination_file.write(line)
 
   @property
   def source_path(self):

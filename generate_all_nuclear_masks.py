@@ -9,6 +9,7 @@ from models.paths import *
 from models.swarm_job import SwarmJob, shard_job_params
 
 SWARM_SUBJOBS_COUNT = 5
+MEMORY = 2
 
 class GenerateAllNuclearMasksJob:
   def __init__(self, source, destination):
@@ -21,7 +22,8 @@ class GenerateAllNuclearMasksJob:
       self.destination_path,
       self.job_name,
       self.jobs,
-      SWARM_SUBJOBS_COUNT
+      SWARM_SUBJOBS_COUNT,
+      MEMORY
     ).run()
 
   @property

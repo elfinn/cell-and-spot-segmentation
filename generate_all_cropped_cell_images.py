@@ -10,7 +10,8 @@ from models.image_filename_glob import ImageFilenameGlob
 from models.paths import *
 from models.swarm_job import shard_job_params, SwarmJob
 
-SWARM_SUBJOBS_COUNT = 5
+SWARM_SUBJOBS_COUNT = 70
+MEMORY = 2
 
 class GenerateAllCroppedCellImagesJob:
   def __init__(self, source_images, source_masks, destination):
@@ -24,7 +25,8 @@ class GenerateAllCroppedCellImagesJob:
       self.destination_path,
       self.job_name,
       self.jobs,
-      SWARM_SUBJOBS_COUNT
+      SWARM_SUBJOBS_COUNT,
+      MEMORY
     ).run()
 
   @property

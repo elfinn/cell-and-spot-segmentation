@@ -7,7 +7,7 @@ import enum
 from time import sleep
 
 LOGGER = logging.getLogger()
-MAX_ARGS_COUNT = 50
+MAX_ARGS_COUNT = 100
 
 def shard_job_params(job_params, shards_count):
   job_params_list = list(job_params)
@@ -18,7 +18,7 @@ def shard_job_params(job_params, shards_count):
   large_shards_count = job_params_count % shards_count_sanitized
 
   next_shard_start_index = 0
-  for i in range(min(shards_count, job_params_count)):
+  for i in range(min(shards_count_sanitized, job_params_count)):
     shard_jobs_count = large_shard_job_params_count if i < large_shards_count else small_shard_job_params_count
     shard_end_index = next_shard_start_index + shard_jobs_count
     yield job_params_list[next_shard_start_index:shard_end_index]
@@ -31,11 +31,12 @@ class RunStrategy(enum.Enum):
 class SwarmJob:
   run_strategy = RunStrategy.SWARM if os.environ.get('ENVIRONMENT') == 'production' else RunStrategy.LOCAL
 
-  def __init__(self, destination_path, name, jobs, parallelism):
+  def __init__(self, destination_path, name, jobs, parallelism, mem):
     self.destination_path = destination_path
     self.name = name
     self.jobs = jobs
     self.parallelism = parallelism
+    self.mem = mem
 
   def run(self):
     if self.run_strategy == RunStrategy.LOCAL:
@@ -56,7 +57,8 @@ class SwarmJob:
       "--module", "python/3.8",
       "-f", self.swarm_file_path,
       "--job-name", self.name,
-      "-b", str(math.ceil(len(self.jobs) / self.parallelism))
+      "-b", str(max(math.ceil(len(self.jobs) / self.parallelism), 1)),
+      "-g", str(self.mem)
     ]
     LOGGER.warning(command)
     subprocess.run(command).check_returncode()

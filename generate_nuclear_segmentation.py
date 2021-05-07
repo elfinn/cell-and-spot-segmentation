@@ -81,7 +81,7 @@ class GenerateNuclearSegmentationJob:
       dilated = skimage.segmentation.expand_labels(self.cellpose_result[0], distance=3)
       self._cellpose_filtered = skimage.segmentation.clear_border(dilated)
     return self._cellpose_filtered
-  
+
 
 def generate_nuclear_segmentation_cli_str(sources, destination, diameter):
   diameter_arguments = ["--diameter=%i" % diameter] if diameter != None else []

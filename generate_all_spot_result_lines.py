@@ -10,7 +10,8 @@ from models.image_filename import ImageFilename
 from models.image_filename_glob import ImageFilenameGlob
 from models.swarm_job import SwarmJob, shard_job_params
 
-SWARM_SUBJOBS_COUNT = 5
+SWARM_SUBJOBS_COUNT = 40
+MEMORY = 2
 
 class GenerateAllSpotResultLinesJob:
   def __init__(
@@ -33,7 +34,8 @@ class GenerateAllSpotResultLinesJob:
       self.destination,
       self.job_name,
       self.jobs,
-      SWARM_SUBJOBS_COUNT
+      SWARM_SUBJOBS_COUNT,
+      MEMORY
     ).run()
 
   @property

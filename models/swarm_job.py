@@ -58,7 +58,8 @@ class SwarmJob:
       "-f", self.swarm_file_path,
       "--job-name", self.name,
       "-b", str(max(math.ceil(len(self.jobs) / self.parallelism), 1)),
-      "-g", str(self.mem)
+      "-g", str(self.mem),
+      "\"--export=MKL_NUM_THREADS=2\""
     ]
     LOGGER.warning(command)
     subprocess.run(command).check_returncode()

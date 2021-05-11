@@ -9,7 +9,7 @@ from generate_nuclear_segmentation import generate_nuclear_segmentation_cli_str
 from models.paths import *
 from models.swarm_job import SwarmJob, shard_job_params
 
-SWARM_SUBJOBS_COUNT = 40
+SWARM_SUBJOBS_COUNT = 70
 MEMORY = 8
 
 class GenerateAllNuclearSegmentationsJob:

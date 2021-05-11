@@ -8,8 +8,8 @@ from generate_distance_transform import generate_distance_transform_cli_str
 from models.paths import *
 from models.swarm_job import SwarmJob, shard_job_params
 
-SWARM_SUBJOBS_COUNT = 20
-MEMORY = 2
+SWARM_SUBJOBS_COUNT = 10
+MEMORY = 1.5
 
 class GenerateAllDistanceTransformsJob:
   def __init__(self, source, destination):

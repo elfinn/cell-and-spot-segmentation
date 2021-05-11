@@ -8,8 +8,8 @@ from generate_nuclear_masks import generate_nuclear_masks_cli_str
 from models.paths import *
 from models.swarm_job import SwarmJob, shard_job_params
 
-SWARM_SUBJOBS_COUNT = 5
-MEMORY = 2
+SWARM_SUBJOBS_COUNT = 2
+MEMORY = 1.5
 
 class GenerateAllNuclearMasksJob:
   def __init__(self, source, destination):

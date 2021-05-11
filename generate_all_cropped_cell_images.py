@@ -11,7 +11,7 @@ from models.paths import *
 from models.swarm_job import shard_job_params, SwarmJob
 
 SWARM_SUBJOBS_COUNT = 70
-MEMORY = 2
+MEMORY = 1.5
 
 class GenerateAllCroppedCellImagesJob:
   def __init__(self, source_images, source_masks, destination):

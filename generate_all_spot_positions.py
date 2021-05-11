@@ -10,8 +10,8 @@ from models.swarm_job import SwarmJob, shard_job_params
 from models.image_filename import ImageFilename
 from models.image_filename_glob import ImageFilenameGlob
 
-SWARM_SUBJOBS_COUNT = 50
-MEMORY = 2
+SWARM_SUBJOBS_COUNT = 20
+MEMORY = 1.5
 
 class GenerateAllSpotPositionsJob:
   def __init__(self, source, destination, config=None):

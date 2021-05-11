@@ -11,7 +11,7 @@ from models.image_filename_glob import ImageFilenameGlob
 from models.swarm_job import SwarmJob, shard_job_params
 
 SWARM_SUBJOBS_COUNT = 40
-MEMORY = 2
+MEMORY = 1.5
 
 class GenerateAllSpotResultLinesJob:
   def __init__(
@@ -31,7 +31,7 @@ class GenerateAllSpotResultLinesJob:
   
   def run(self):
     SwarmJob(
-      self.destination,
+      self.destination_path,
       self.job_name,
       self.jobs,
       SWARM_SUBJOBS_COUNT,
@@ -71,6 +71,12 @@ class GenerateAllSpotResultLinesJob:
   @property
   def spot_source_paths(self):
     return self.spots_source_directory_path.glob(str(ImageFilenameGlob(suffix="_nucleus_???_spot_*", extension="npy")))
+
+  @property
+  def destination_path(self):
+    if not hasattr(self, "_destination_path"):
+      self._destination_path = destination_path(self.destination)
+    return self._destination_path
 
 @cli.log.LoggingApp
 def generate_all_spot_result_lines_cli(app):

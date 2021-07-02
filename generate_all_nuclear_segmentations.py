@@ -9,14 +9,15 @@ from generate_nuclear_segmentation import generate_nuclear_segmentation_cli_str
 from models.paths import *
 from models.swarm_job import SwarmJob, shard_job_params
 
-SWARM_SUBJOBS_COUNT = 70
+FILES_PER_CALL_COUNT = 10
 MEMORY = 8
 
 class GenerateAllNuclearSegmentationsJob:
-  def __init__(self, source, destination, diameter):
+  def __init__(self, source, destination, log, diameter):
     self.source = source
     self.destination = destination
     self.diameter = diameter
+    self.logdir = log
     self.logger = logging.getLogger()
 
   def run(self):
@@ -24,14 +25,15 @@ class GenerateAllNuclearSegmentationsJob:
       self.destination_path,
       self.job_name,
       self.jobs,
-      SWARM_SUBJOBS_COUNT,
-      MEMORY
+      self.logdir,
+      MEMORY,
+      FILES_PER_CALL_COUNT
     ).run()
 
   @property
   def jobs(self):
     if not hasattr(self, "_jobs"):
-      source_filenames_shards = shard_job_params(self.source_filenames, SWARM_SUBJOBS_COUNT)
+      source_filenames_shards = shard_job_params(self.source_filenames, FILES_PER_CALL_COUNT)
       self._jobs = [
         generate_nuclear_segmentation_cli_str(source_filenames_shard, self.destination, self.diameter)
         for source_filenames_shard in source_filenames_shards

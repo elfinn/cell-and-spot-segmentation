@@ -15,13 +15,14 @@ from models.image_filename_glob import *
 from models.paths import *
 from models.swarm_job import SwarmJob, shard_job_params
 
-SWARM_SUBJOBS_COUNT = 5
+FILES_PER_CALL_COUNT = 2000
 MEMORY = 2
 
 class GenerateAllMaximumProjectionsJob:
-  def __init__(self, source, destination):
+  def __init__(self, source, destination, log):
     self.source = source
     self.destination = destination
+    self.logdir = log
     self.logger = logging.getLogger()
   
   def run(self):
@@ -29,8 +30,9 @@ class GenerateAllMaximumProjectionsJob:
       self.destination_path,
       self.job_name,
       self.jobs,
-      SWARM_SUBJOBS_COUNT,
-      MEMORY
+      self.logdir,
+      MEMORY,
+      FILES_PER_CALL_COUNT
     ).run()
 
   @property
@@ -38,7 +40,7 @@ class GenerateAllMaximumProjectionsJob:
     if not hasattr(self, "_jobs"):
       image_filename_constraints_shards = shard_job_params(
         self.distinct_image_filename_globs,
-        SWARM_SUBJOBS_COUNT
+        FILES_PER_CALL_COUNT
       )
       self._jobs = [
         generate_maximum_projection_cli_str(

@@ -8,13 +8,14 @@ from generate_nuclear_masks import generate_nuclear_masks_cli_str
 from models.paths import *
 from models.swarm_job import SwarmJob, shard_job_params
 
-SWARM_SUBJOBS_COUNT = 2
+FILES_PER_CALL_COUNT = 5000
 MEMORY = 1.5
 
 class GenerateAllNuclearMasksJob:
-  def __init__(self, source, destination):
+  def __init__(self, source, destination, log):
     self.source = source
     self.destination = destination
+    self.logdir = log
     self.logger = logging.getLogger()
 
   def run(self):
@@ -22,8 +23,9 @@ class GenerateAllNuclearMasksJob:
       self.destination_path,
       self.job_name,
       self.jobs,
-      SWARM_SUBJOBS_COUNT,
-      MEMORY
+      self.logdir,
+      MEMORY,
+      FILES_PER_CALL_COUNT
     ).run()
 
   @property
@@ -49,7 +51,7 @@ class GenerateAllNuclearMasksJob:
   @property
   def jobs(self):
     if not hasattr(self, "_jobs"):
-      source_filenames_shards = shard_job_params(self.source_filenames, SWARM_SUBJOBS_COUNT)
+      source_filenames_shards = shard_job_params(self.source_filenames, FILES_PER_CALL_COUNT)
       self._jobs = [
         generate_nuclear_masks_cli_str(source_filenames_shard, self.destination)
         for source_filenames_shard in source_filenames_shards

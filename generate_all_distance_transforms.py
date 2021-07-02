@@ -8,13 +8,14 @@ from generate_distance_transform import generate_distance_transform_cli_str
 from models.paths import *
 from models.swarm_job import SwarmJob, shard_job_params
 
-SWARM_SUBJOBS_COUNT = 10
+FILES_PER_CALL_COUNT = 50000
 MEMORY = 1.5
 
 class GenerateAllDistanceTransformsJob:
-  def __init__(self, source, destination):
+  def __init__(self, source, destination, log):
     self.source = source
     self.destination = destination
+    self.logdir = log
     self.logger = logging.getLogger()
 
   def run(self):
@@ -22,14 +23,15 @@ class GenerateAllDistanceTransformsJob:
       self.destination_path,
       self.job_name,
       self.jobs,
-      SWARM_SUBJOBS_COUNT,
-      MEMORY
+      self.logdir,
+      MEMORY,
+      FILES_PER_CALL_COUNT
     ).run()
 
   @property
   def jobs(self):
     if not hasattr(self, "_jobs"):
-      shards = shard_job_params(self.nuclear_mask_paths, SWARM_SUBJOBS_COUNT)
+      shards = shard_job_params(self.nuclear_mask_paths, FILES_PER_CALL_COUNT)
       self._jobs = [
         generate_distance_transform_cli_str(shard, self.destination) for shard in shards
       ]

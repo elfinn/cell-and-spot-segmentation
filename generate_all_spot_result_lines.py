@@ -10,8 +10,8 @@ from models.image_filename import ImageFilename
 from models.image_filename_glob import ImageFilenameGlob
 from models.swarm_job import SwarmJob, shard_job_params
 
-SWARM_SUBJOBS_COUNT = 40
-MEMORY = 1.5
+FILES_PER_CALL_COUNT = 20000
+MEMORY = 2
 
 class GenerateAllSpotResultLinesJob:
   def __init__(
@@ -20,13 +20,15 @@ class GenerateAllSpotResultLinesJob:
     z_centers_source_directory,
     distance_transforms_source_directory,
     nuclear_masks_source_directory_path,
-    destination
+    destination,
+    log
   ):
     self.spots_source_directory = spots_source_directory
     self.z_centers_source_directory = z_centers_source_directory
     self.distance_transforms_source_directory = distance_transforms_source_directory
     self.nuclear_masks_source_directory_path = nuclear_masks_source_directory_path
     self.destination = destination
+    self.logdir = log
     self.logger = logging.getLogger()
   
   def run(self):
@@ -34,14 +36,15 @@ class GenerateAllSpotResultLinesJob:
       self.destination_path,
       self.job_name,
       self.jobs,
-      SWARM_SUBJOBS_COUNT,
-      MEMORY
+      self.logdir,
+      MEMORY,
+      FILES_PER_CALL_COUNT
     ).run()
 
   @property
   def jobs(self):
     if not hasattr(self, "_jobs"):
-      spot_source_paths_shards = shard_job_params(self.spot_source_paths, SWARM_SUBJOBS_COUNT)
+      spot_source_paths_shards = shard_job_params(self.spot_source_paths, FILES_PER_CALL_COUNT)
       self._jobs = [
         generate_spot_result_line_cli_str(
           spot_source_paths_shard,

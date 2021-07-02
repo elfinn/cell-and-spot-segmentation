@@ -7,12 +7,13 @@ import enum
 from time import sleep
 
 LOGGER = logging.getLogger()
-MAX_ARGS_COUNT = 100
+MAX_ARGS_PER_JOB = 10000
 
-def shard_job_params(job_params, shards_count):
+def shard_job_params(job_params, files_count):
   job_params_list = list(job_params)
   job_params_count = len(job_params_list)
-  shards_count_sanitized = max(shards_count, math.ceil(job_params_count/MAX_ARGS_COUNT))
+  params_per_job = min(files_count, MAX_ARGS_PER_JOB)
+  shards_count_sanitized = math.ceil(job_params_count/params_per_job)
   small_shard_job_params_count = math.floor(job_params_count / shards_count_sanitized)
   large_shard_job_params_count = small_shard_job_params_count + 1
   large_shards_count = job_params_count % shards_count_sanitized
@@ -31,12 +32,13 @@ class RunStrategy(enum.Enum):
 class SwarmJob:
   run_strategy = RunStrategy.SWARM if os.environ.get('ENVIRONMENT') == 'production' else RunStrategy.LOCAL
 
-  def __init__(self, destination_path, name, jobs, parallelism, mem):
+  def __init__(self, destination_path, name, jobs, logdir, mem, files_count):
     self.destination_path = destination_path
     self.name = name
     self.jobs = jobs
-    self.parallelism = parallelism
     self.mem = mem
+    self.logdir = logdir
+    self.bundling = math.ceil(files_count/MAX_ARGS_PER_JOB)
 
   def run(self):
     if self.run_strategy == RunStrategy.LOCAL:
@@ -49,7 +51,7 @@ class SwarmJob:
     self.start()
     while not self.is_complete():
       LOGGER.warning("job not complete yet")
-      sleep(5)
+      sleep(20)
 
   def start(self):
     command = [
@@ -57,8 +59,9 @@ class SwarmJob:
       "--module", "python/3.8",
       "-f", self.swarm_file_path,
       "--job-name", self.name,
-      "-b", str(max(math.ceil(len(self.jobs) / self.parallelism), 1)),
       "-g", str(self.mem),
+      "--logdir", str(self.logdir),
+      "-b", str(self.bundling),
       "--sbatch", "\"--export=MKL_NUM_THREADS=2\""
     ]
     LOGGER.warning(command)
@@ -71,10 +74,10 @@ class SwarmJob:
     sjobs_result.check_returncode()
     result_lines = sjobs_result.stdout.splitlines()
     LOGGER.warning("squeue result: %s", result_lines)
-    return (
-      len(result_lines) == self.parallelism and
-      all((result_line == "COMPLETED" for result_line in result_lines))
-    )
+    if(any((result_line == "FAILED" for result_line in result_lines))):
+        return True
+    else: 
+        return all((result_line == "COMPLETED" for result_line in result_lines))
 
   def generate_file(self):
     with self.swarm_file_path.open("w") as swarm_file:

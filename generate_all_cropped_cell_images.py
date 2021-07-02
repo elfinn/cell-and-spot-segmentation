@@ -10,14 +10,15 @@ from models.image_filename_glob import ImageFilenameGlob
 from models.paths import *
 from models.swarm_job import shard_job_params, SwarmJob
 
-SWARM_SUBJOBS_COUNT = 70
+FILES_PER_CALL_COUNT = 20000
 MEMORY = 1.5
 
 class GenerateAllCroppedCellImagesJob:
-  def __init__(self, source_images, source_masks, destination):
+  def __init__(self, source_images, source_masks, destination, log):
     self.source_images = source_images
     self.source_masks = source_masks
     self.destination = destination
+    self.logdir = log
     self.logger = logging.getLogger()
   
   def run(self):
@@ -25,8 +26,9 @@ class GenerateAllCroppedCellImagesJob:
       self.destination_path,
       self.job_name,
       self.jobs,
-      SWARM_SUBJOBS_COUNT,
-      MEMORY
+      self.logdir,
+      MEMORY,
+      FILES_PER_CALL_COUNT
     ).run()
 
   @property
@@ -37,7 +39,7 @@ class GenerateAllCroppedCellImagesJob:
         for source_image_path in self.source_image_paths
         for source_mask_path in self.source_mask_paths_for_source_image_path(source_image_path)
       ]
-      shards = shard_job_params(masks, SWARM_SUBJOBS_COUNT)
+      shards = shard_job_params(masks, FILES_PER_CALL_COUNT)
       self._jobs = [generate_cropped_cell_image_cli_str(shard, self.destination_path) for shard in shards]
     return self._jobs
 

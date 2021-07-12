@@ -3,7 +3,7 @@ import logging
 
 LOGGER = logging.getLogger()
 
-IMAGE_FILE_RE = re.compile(
+CV_IMAGE_FILE_RE = re.compile(
     "(?P<experiment>.+)" + 
     "_" + 
     "(?P<well>[A-Z]\\d{2})" +
@@ -19,12 +19,26 @@ IMAGE_FILE_RE = re.compile(
     "(?P<extension>.+)"
   )
 
+LSM_IMAGE_FILE_RE = re.compile(
+    "(?P<experiment>.+)" + 
+    "\\" + 
+    "(?P<well>[A-Za-z0-9]+)" +
+    "_\\d{4}_\\d{2}_\\d{2}__\\d{2}_\\d{2}_\\d{2}\\" +
+    "p(?P<f>\\d{1,3}|XXX)\\" +
+    "ch(?P<c>\\d{1}|XX)\\" + 
+    "z(?P<z>\\d{2}|XX)" + 
+    "\\." + 
+    "(?P<extension>.+)"
+  )
+
 class ImageFilename:
   @classmethod
   def parse(cls, image_filename_str):
-    match = IMAGE_FILE_RE.match(image_filename_str)
+    match = CV_IMAGE_FILE_RE.match(image_filename_str)
     if not match:
-      raise Exception("invalid image filename: %s" % image_filename_str)
+      match = LSM_IMAGE_FILE_RE.match(image_filename_str)
+      if not match:
+        raise Exception("invalid image filename: %s" % image_filename_str)
     return cls(
       experiment=match["experiment"],
       well=match["well"],

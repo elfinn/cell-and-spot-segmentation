@@ -71,7 +71,7 @@ class GenerateAllMaximumProjectionsJob:
   
   @property
   def image_file_paths(self):
-    return self.source_path.glob(str(ImageFilenameGlob(suffix="", extension="tif")))
+    return self.source_path.glob(str(ImageFilenameGlob(suffix="", extension="tif")), recursive=True)
 
   @property
   def image_filenames(self):

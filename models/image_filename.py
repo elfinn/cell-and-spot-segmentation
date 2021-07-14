@@ -21,11 +21,11 @@ CV_IMAGE_FILE_RE = re.compile(
 
 LSM_IMAGE_FILE_RE = re.compile(
     "(?P<experiment>.+)" + 
-    "\\" + 
+    "\\\\" + 
     "(?P<well>[A-Za-z0-9]+)" +
-    "_\\d{4}_\\d{2}_\\d{2}__\\d{2}_\\d{2}_\\d{2}\\" +
-    "p(?P<f>\\d{1,3}|XXX)\\" +
-    "ch(?P<c>\\d{1}|XX)\\" + 
+    "_\\d{4}_\\d{2}_\\d{2}__\\d{2}_\\d{2}_\\d{2}\\\\" +
+    "p(?P<f>\\d{1,3}|XXX)\\\\" +
+    "ch(?P<c>\\d{1}|XX)\\\\" + 
     "z(?P<z>\\d{2}|XX)" + 
     "\\." + 
     "(?P<extension>.+)"

@@ -71,11 +71,11 @@ class GenerateAllMaximumProjectionsJob:
   
   @property
   def image_file_paths(self):
-    return self.source_path.glob(str(ImageFilenameGlob(suffix="", extension="tif")), recursive=True)
+    return self.source_path.rglob("*.tif")
 
   @property
   def image_filenames(self):
-    return (ImageFilename.parse(image_file_path.name) for image_file_path in self.image_file_paths)
+    return (ImageFilename.parse(str(image_file_path.relative_to(self.source_path))) for image_file_path in self.image_file_paths)
 
   @property
   def distinct_image_filename_globs(self):

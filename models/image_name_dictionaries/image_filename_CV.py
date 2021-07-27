@@ -3,9 +3,9 @@ import logging
 
 LOGGER = logging.getLogger()
 
-IMAGE_TYPE = "CV"
 
-CV_IMAGE_FILE_RE = re.compile(
+
+IMAGE_FILE_RE = re.compile(
     "(?P<experiment>.+)" + 
     "_" + 
     "(?P<well>[A-Z]\\d{2})" +
@@ -21,38 +21,21 @@ CV_IMAGE_FILE_RE = re.compile(
     "(?P<extension>.+)"
   )
 
-LSM_IMAGE_FILE_RE = re.compile(
-    "(?P<experiment>.+)" + 
-    "/" + 
-    "(?P<well>[A-Za-z0-9]+)" +
-    "(?P<timestamp>_\\d{4}_\\d{2}_\\d{2}__\\d{2}_\\d{2}_\\d{2}/)" +
-    "p(?P<f>\\d{1,3}|XXX)/" +
-    "ch(?P<c>\\d{1}|XX)/" + 
-    "z(?P<z>\\d{2}|XX)" + 
-    "(?P<t>.*)" +
-    "(?P<l>.*)" +
-    "(?P<a>.*)" +
-    "(?P<suffix>.*)" +
-    "\\." + 
-    "(?P<extension>.+)"
-  )
 
-class ImageFilename:
+
+class CVImageFilename:
   @classmethod
   def parse(cls, image_filename_str):
-    match = CV_IMAGE_FILE_RE.match(image_filename_str)
+    match = IMAGE_FILE_RE.match(image_filename_str)
     if not match:
-      IMAGE_TYPE = "LSM"
-      match = LSM_IMAGE_FILE_RE.match(image_filename_str)
-      if not match:
-        raise Exception("invalid image filename: %s" % image_filename_str)
+       raise Exception("invalid image filename: %s" % image_filename_str)
     return cls(
       experiment=match["experiment"],
       well=match["well"],
-      t=(None if match["t"] == "XXXX" else None if match["t"] == "" else int(match["t"])),
+      t=(None if match["t"] == "XXXX" else int(match["t"])),
       f=(None if match["f"] == "XXX" else int(match["f"])),
-      l=(None if match["l"] == "XX" else None if match["l"] == "" else int(match["l"])),
-      a=(None if match["a"] == "XX" else None if match["a"] == "" else int(match["a"])),
+      l=(None if match["l"] == "XX" else int(match["l"])),
+      a=(None if match["a"] == "XX" else int(match["a"])),
       z=(None if match["z"] == "XX" else int(match["z"])),
       c=(None if match["c"] == "XX" else int(match["c"])),
       suffix=match["suffix"],
@@ -72,28 +55,18 @@ class ImageFilename:
     self.extension = extension
 
   def __str__(self):
-    if IMAGE_TYPE == "CV":
-        return "%s_%s_T%sF%sL%sA%sZ%sC%s%s.%s" % (
-          self.experiment,
-          self.well,
-          self.t_str,
-          self.f_str,
-          self.l_str,
-          self.a_str,
-          self.z_str,
-          self.c_str,
-          self.suffix,
-          self.extension
-        )
-    elif IMAGE_TYPE == "LSM":
-        return "%s/%s_????_??_??__??_??_??/p%i/ch%i/z%s.%s" % (
-          self.experiment,
-          self.well,
-          self.f_str,
-          self.c_str,
-          self.z_str,
-          self.extension
-        )
+     return "%s_%s_T%sF%sL%sA%sZ%sC%s%s.%s" % (
+       self.experiment,
+       self.well,
+       self.t_str,
+       self.f_str,
+       self.l_str,
+       self.a_str,
+       self.z_str,
+       self.c_str,
+       self.suffix,
+       self.extension
+     )
 
   def __copy__(self):
     return ImageFilename(

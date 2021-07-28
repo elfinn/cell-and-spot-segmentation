@@ -20,7 +20,7 @@ IMAGE_FILE_RE = re.compile(
     "(?P<extension>.+)"
   )
 
-class ImageFilename:
+class LSMImageFilename:
   @classmethod
   def parse(cls, image_filename_str):
     match = IMAGE_FILE_RE.match(image_filename_str)

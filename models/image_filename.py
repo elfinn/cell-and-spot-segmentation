@@ -1,134 +1,39 @@
 import re
 import logging
+import os
+from image_name_dictionaries.image_filename_CV import CVImageFilename
+from image_name_dictionaries.image_filename_LSM import LSMImageFilename
 
 LOGGER = logging.getLogger()
 
-IMAGE_TYPE = "CV"
+FILE_TYPE = os.environ.get('FILE_TYPE')
 
-CV_IMAGE_FILE_RE = re.compile(
-    "(?P<experiment>.+)" + 
-    "_" + 
-    "(?P<well>[A-Z]\\d{2})" +
-    "_" +
-    "T(?P<t>\\d{4}|XXXX)" +
-    "F(?P<f>\\d{3}|XXX)" +
-    "L(?P<l>\\d{2}|XX)" +
-    "A(?P<a>\\d{2}|XX)" + 
-    "Z(?P<z>\\d{2}|XX)" + 
-    "C(?P<c>\\d{2}|XX)" + 
-    "(?P<suffix>.*)" + 
-    "\\." + 
-    "(?P<extension>.+)"
-  )
 
-LSM_IMAGE_FILE_RE = re.compile(
-    "(?P<experiment>.+)" + 
-    "/" + 
-    "(?P<well>[A-Za-z0-9]+)" +
-    "(?P<timestamp>_\\d{4}_\\d{2}_\\d{2}__\\d{2}_\\d{2}_\\d{2}/)" +
-    "p(?P<f>\\d{1,3}|XXX)/" +
-    "ch(?P<c>\\d{1}|XX)/" + 
-    "z(?P<z>\\d{2}|XX)" + 
-    "(?P<t>.*)" +
-    "(?P<l>.*)" +
-    "(?P<a>.*)" +
-    "(?P<suffix>.*)" +
-    "\\." + 
-    "(?P<extension>.+)"
-  )
+
+
 
 class ImageFilename:
   @classmethod
   def parse(cls, image_filename_str):
-    match = CV_IMAGE_FILE_RE.match(image_filename_str)
-    if not match:
-      IMAGE_TYPE = "LSM"
-      match = LSM_IMAGE_FILE_RE.match(image_filename_str)
-      if not match:
-        raise Exception("invalid image filename: %s" % image_filename_str)
-    return cls(
-      experiment=match["experiment"],
-      well=match["well"],
-      t=(None if match["t"] == "XXXX" else None if match["t"] == "" else int(match["t"])),
-      f=(None if match["f"] == "XXX" else int(match["f"])),
-      l=(None if match["l"] == "XX" else None if match["l"] == "" else int(match["l"])),
-      a=(None if match["a"] == "XX" else None if match["a"] == "" else int(match["a"])),
-      z=(None if match["z"] == "XX" else int(match["z"])),
-      c=(None if match["c"] == "XX" else int(match["c"])),
-      suffix=match["suffix"],
-      extension=match["extension"],
-    )
+    if FILE_TYPE == 'CV':
+        return CVImageFilename.parse(cls, image_filename_str)
+    elif FILE_TYPE == 'LSM':
+        return LSMImageFilename.parse(cls, image_filename_str)
 
-  def __init__(self, experiment, well, t, f, l, a, z, c, suffix, extension):
-    self.experiment = experiment
-    self.well = well
-    self.t = t
-    self.f = f
-    self.l = l
-    self.a = a
-    self.z = z
-    self.c = c
-    self.suffix = suffix
-    self.extension = extension
+  def __init__(self):
+    if FILE_TYPE == 'CV':
+        return CVImageFilename(self, experiment, well, t, f, l, a, z, c, suffix, extension)
+    elif FILE_TYPE == 'LSM':
+        return LSMImageFilename(self, experiment, well, timepoint, z, c, suffix, extension)
 
   def __str__(self):
-    if IMAGE_TYPE == "CV":
-        return "%s_%s_T%sF%sL%sA%sZ%sC%s%s.%s" % (
-          self.experiment,
-          self.well,
-          self.t_str,
-          self.f_str,
-          self.l_str,
-          self.a_str,
-          self.z_str,
-          self.c_str,
-          self.suffix,
-          self.extension
-        )
-    elif IMAGE_TYPE == "LSM":
-        return "%s/%s_????_??_??__??_??_??/p%i/ch%i/z%s.%s" % (
-          self.experiment,
-          self.well,
-          self.f_str,
-          self.c_str,
-          self.z_str,
-          self.extension
-        )
+    if FILE_TYPE == 'CV':
+        return str(CVImageFilename(self))
+    elif FILE_TYPE == 'LSM':
+        return str(LSMImageFilename(self)
 
   def __copy__(self):
-    return ImageFilename(
-      experiment=self.experiment,
-      well=self.well,
-      t=self.t,
-      f=self.f,
-      l=self.l,
-      a=self.a,
-      z=self.z,
-      c=self.c,
-      suffix=self.suffix,
-      extension=self.extension
-    )
-
-  @property
-  def t_str(self):
-    return "XXXX" if not self.t else ("%04i" % self.t)
-
-  @property
-  def f_str(self):
-    return "XXX" if not self.f else ("%03i" % self.f)
-
-  @property
-  def l_str(self):
-    return "XX" if not self.l else ("%02i" % self.l)
-
-  @property
-  def a_str(self):
-    return "XX" if not self.a else ("%02i" % self.a)
-
-  @property
-  def z_str(self):
-    return "XX" if not self.z else ("%02i" % self.z)
-
-  @property
-  def c_str(self):
-    return "XX" if not self.c else ("%02i" % self.c)
+    if FILE_TYPE == 'CV':
+        return CVImageFilename.__copy__(self)
+    elif FILE_TYPE == 'LSM':
+        return LSMImageFilename.__copy__(self)

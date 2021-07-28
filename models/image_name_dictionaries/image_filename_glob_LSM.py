@@ -9,7 +9,7 @@ IMAGE_FILENAME_KEYS = set([
   "extension"
 ])
 
-class ImageFilenameGlob:
+class LSMImageFilenameGlob:
   @classmethod
   def from_image_filename(cls, image_filename, excluding_keys=[]):
     keys = IMAGE_FILENAME_KEYS - set(excluding_keys)

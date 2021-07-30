@@ -29,9 +29,12 @@ class RunStrategy(enum.Enum):
   LOCAL = enum.auto()
   SWARM = enum.auto()
 
+
+
 class SwarmJob:
   run_strategy = RunStrategy.SWARM if os.environ.get('ENVIRONMENT') == 'production' else RunStrategy.LOCAL
-
+  file_type = "LSM" if os.environ.get('FILE_TYPE') == 'LSM' else 'CV'
+    
   def __init__(self, destination_path, name, jobs, logdir, mem, files_count):
     self.destination_path = destination_path
     self.name = name
@@ -62,7 +65,7 @@ class SwarmJob:
       "-g", str(self.mem),
       "--logdir", str(self.logdir),
       "-b", str(self.bundling),
-      "--sbatch", "\"--export=MKL_NUM_THREADS=2\""
+      "--sbatch", ("\"--export=MKL_NUM_THREADS=2, FILE_TYPE=\"%s\"\"", file_type)
     ]
     LOGGER.warning(command)
     subprocess.run(command).check_returncode()

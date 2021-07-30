@@ -30,9 +30,6 @@ class CVImageFilenameGlob:
     self.extension = extension
 
   def __str__(self):
-    return self.to_glob()
-
-  def to_glob(self):
     return  ("%s_%s_T%sF%sL%sA%sZ%sC%s%s.%s" % (
       self.experiment_glob,
       self.well_glob,
@@ -51,7 +48,7 @@ class CVImageFilenameGlob:
 
   def __eq__(self, other):
     return (
-      isinstance(other, ImageFilenameGlob) and
+      isinstance(other, CVImageFilenameGlob) and
       self.experiment == other.experiment and
       self.well == other.well and
       self.t == other.t and

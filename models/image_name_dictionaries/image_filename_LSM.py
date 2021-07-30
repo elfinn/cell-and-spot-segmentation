@@ -73,7 +73,7 @@ class LSMImageFilename:
 
   @property
   def f_str(self):
-    return "XXX" if not self.f else ("%01i" % self.f)
+    return "XXX" if not self.f else ("%i" % self.f)
 
   @property
   def z_str(self):
@@ -81,4 +81,4 @@ class LSMImageFilename:
 
   @property
   def c_str(self):
-    return "XX" if not self.c else ("%01i" % self.c)
+    return "XX" if not self.c else ("%i" % self.c)

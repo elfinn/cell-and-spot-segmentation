@@ -26,9 +26,6 @@ class LSMImageFilenameGlob:
     self.extension = extension
 
   def __str__(self):
-    return self.to_glob()
-
-  def to_glob(self):
     return  ("%s/%s_%s/p%s/ch%s/z%s%s.%s" % (
       self.experiment_glob,
       self.well_glob,
@@ -45,7 +42,7 @@ class LSMImageFilenameGlob:
 
   def __eq__(self, other):
     return (
-      isinstance(other, ImageFilenameGlob) and
+      isinstance(other, LSMImageFilenameGlob) and
       self.experiment == other.experiment and
       self.well == other.well and
       self.timestamp == other.timestamp and
@@ -80,7 +77,7 @@ class LSMImageFilenameGlob:
   @property
   def f_glob(self):
     if self.f != None:
-      return "%03i" % self.f
+      return "%i" % self.f
     else:
       return "*"
 
@@ -94,7 +91,7 @@ class LSMImageFilenameGlob:
   @property
   def c_glob(self):
     if self.c != None:
-      return "%02i" % self.c
+      return "%i" % self.c
     else:
       return "?"
 

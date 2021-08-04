@@ -5,8 +5,9 @@ from models.image_filename import ImageFilename
 
 
 class ZSlicedImage:
-  def __init__(self, path):
+  def __init__(self, path, source):
     self.path = path
+    self.source_dir = source
 
   @property
   def image(self):
@@ -17,6 +18,6 @@ class ZSlicedImage:
   @property
   def z(self):
     if not hasattr(self, "_z"):
-      image_filename = ImageFilename.parse(self.path.name)
+      image_filename = ImageFilename.parse(str(self.path.relative_to(self.source_dir)))
       self._z = image_filename.z
     return self._z

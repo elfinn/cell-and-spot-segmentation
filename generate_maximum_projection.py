@@ -82,7 +82,7 @@ class GenerateMaximumProjectionJob:
 
   @property
   def source_z_sliced_images(self):
-    return (ZSlicedImage(source_file_path) for source_file_path in self.source_file_paths)
+    return (ZSlicedImage(source_file_path, self.source_directory_path) for source_file_path in self.source_file_paths)
 
 
   @property

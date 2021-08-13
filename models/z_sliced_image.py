@@ -12,7 +12,11 @@ class ZSlicedImage:
   @property
   def image(self):
     if not hasattr(self, "_image"):
-      self._image = skimage.io.imread(self.path, as_gray=True)
+      raw_image = skimage.io.imread(self.path)
+      if len(raw_image.shape) != 2:
+        self._image = raw_image[:, :, 0]
+      else:
+        self._image = raw_image
     return self._image
 
   @property

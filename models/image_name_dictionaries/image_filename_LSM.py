@@ -60,7 +60,7 @@ class LSMImageFilename:
      )
 
   def __copy__(self):
-    return ImageFilename(
+    return LSMImageFilename(
       experiment=self.experiment,
       well=self.well,
       timestamp=self.timestamp,

@@ -35,7 +35,8 @@ class SwarmJob:
   run_strategy = RunStrategy.SWARM if os.environ.get('ENVIRONMENT') == 'production' else RunStrategy.LOCAL
   file_type = "LSM" if os.environ.get('FILE_TYPE') == 'LSM' else 'CV'
     
-  def __init__(self, destination_path, name, jobs, logdir, mem, files_count):
+  def __init__(self, source, destination_path, name, jobs, logdir, mem, files_count):
+    self.source = source
     self.destination_path = destination_path
     self.name = name
     self.jobs = jobs

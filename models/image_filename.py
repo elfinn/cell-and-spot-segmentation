@@ -22,18 +22,18 @@ class ImageFilename:
 
   def __init__(self):
     if FILE_TYPE == 'CV':
-        return CVImageFilename(experiment, well, t, f, l, a, z, c, suffix, extension)
+        self.glob = CVImageFilename(experiment, well, t, f, l, a, z, c, suffix, extension)
     elif FILE_TYPE == 'LSM':
-        return LSMImageFilename(experiment, well, timestamp, z, c, suffix, extension)
+        self.glob = LSMImageFilename(experiment, well, timestamp, z, c, suffix, extension)
 
   def __str__(self):
     if FILE_TYPE == 'CV':
-        return str(CVImageFilename(self))
+        return str(self.glob)
     elif FILE_TYPE == 'LSM':
-        return str(LSMImageFilename(self))
+        return str(self.glob)
 
   def __copy__(self):
     if FILE_TYPE == 'CV':
-        return CVImageFilename.__copy__(self)
+        return CVImageFilename.__copy__(self.glob)
     elif FILE_TYPE == 'LSM':
-        return LSMImageFilename.__copy__(self)
+        return LSMImageFilename.__copy__(self.glob)

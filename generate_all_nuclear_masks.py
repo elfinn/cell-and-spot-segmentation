@@ -20,6 +20,7 @@ class GenerateAllNuclearMasksJob:
 
   def run(self):
     SwarmJob(
+      self.source,
       self.destination_path,
       self.job_name,
       self.jobs,
@@ -53,14 +54,14 @@ class GenerateAllNuclearMasksJob:
     if not hasattr(self, "_jobs"):
       source_filenames_shards = shard_job_params(self.source_filenames, FILES_PER_CALL_COUNT)
       self._jobs = [
-        generate_nuclear_masks_cli_str(source_filenames_shard, self.destination)
+        generate_nuclear_masks_cli_str(source_filenames_shard, self.destination, self.source)
         for source_filenames_shard in source_filenames_shards
       ]
     return self._jobs
 
   @property
   def source_filenames(self):
-    return self.source_path.glob("*_nuclear_segmentation.npy")
+    return self.source_path.rglob("*_nuclear_segmentation.npy")
 
 @cli.log.LoggingApp
 def generate_all_nuclear_masks(app):

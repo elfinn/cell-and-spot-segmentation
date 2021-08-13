@@ -69,7 +69,7 @@ class CVImageFilename:
      )
 
   def __copy__(self):
-    return ImageFilename(
+    return CVImageFilename(
       experiment=self.experiment,
       well=self.well,
       t=self.t,

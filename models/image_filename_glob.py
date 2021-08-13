@@ -42,12 +42,22 @@ class ImageFilenameGlob:
             self.glob = CVImageFilenameGlob(experiment, well, t, f, l, a, z, c, suffix, extension)
         elif IMAGE_FILETYPE == 'LSM':
             self.glob = LSMImageFilenameGlob(experiment, well, timestamp, f, z, c, suffix, extension)
+            
 
     def __str__(self):
+      if IMAGE_FILETYPE == 'CV':
+        return str(self.glob)
+      elif IMAGE_FILETYPE == 'LSM':
         return str(self.glob)
 
     def __hash__(self):
+      if IMAGE_FILETYPE == 'CV':
+        return hash(self.glob)
+      elif IMAGE_FILETYPE == 'LSM':
         return hash(self.glob)
     
     def __eq__(self, other):
-        return (self.glob == other.glob)
+      if IMAGE_FILETYPE == 'CV':
+        return CVImageFilenameGlob.__eq__(self.glob,other.glob)
+      elif IMAGE_FILETYPE == 'LSM':
+        return LSMImageFilenameGlob.__eq__(self.glob,other.glob)

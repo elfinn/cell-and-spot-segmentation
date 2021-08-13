@@ -73,7 +73,6 @@ class GenerateMaximumProjectionJob:
       maximum_projection = numpy.fmax(maximum_projection, source_z_sliced_image.image)
       summed_z_values = summed_z_values + source_z_sliced_image.image
       weighted_summed_z_values = weighted_summed_z_values + (source_z_sliced_image.image * source_z_sliced_image.z)
-
     self._maximum_projection = maximum_projection
 
     zero_adjusted_summed_z_values = summed_z_values + ((summed_z_values == 0) * numpy.ones_like(summed_z_values))
@@ -88,7 +87,9 @@ class GenerateMaximumProjectionJob:
   @property
   def destination_path(self):
     if not hasattr(self, "_destination_path"):
-      self._destination_path = Path(self.destination)
+      global_destination_path = Path(self.destination)
+      local_destination_path = Path(self.filename_pattern).parents[0]
+      self._destination_path = global_destination_path / local_destination_path
       if not self._destination_path.exists():
         Path.mkdir(self._destination_path, parents=True)
       elif not self._destination_path.is_dir():

@@ -18,7 +18,8 @@ from models.paths import *
 
 
 class GenerateNuclearSegmentationJob:
-  def __init__(self, source, destination, diameter):
+  def __init__(self, source, destination, source_dir, diameter):
+    self.source_dir = Path(source_dir)
     self.source = source
     self.destination = destination
     self.diameter = diameter
@@ -30,7 +31,14 @@ class GenerateNuclearSegmentationJob:
   @property
   def destination_path(self):
     if not hasattr(self, "_destination_path"):
-      self._destination_path = destination_path(self.destination)
+      global_destination_path = Path(self.destination)
+      local_destination_path = Path(str(self.destination_image_filename)).parents[0]
+      path_to_make = global_destination_path / local_destination_path
+      self._destination_path = global_destination_path 
+      if not path_to_make.exists():
+        Path.mkdir(path_to_make, parents=True)
+      elif not path_to_make.is_dir():
+        raise Exception("destination already exists, but is not a directory")
     return self._destination_path
 
   @property
@@ -43,7 +51,8 @@ class GenerateNuclearSegmentationJob:
   def destination_image_filename(self):
     if not hasattr(self, "_destination_image_filename"):
       self._destination_image_filename = copy(self.source_image_filename)
-      self._destination_image_filename.a = None
+      if hasattr(self.source_image_filename, "a"):
+            self._destination_image_filename.a = None
       self._destination_image_filename.z = None
       self._destination_image_filename.c = None
       self._destination_image_filename.suffix = "_nuclear_segmentation"
@@ -59,7 +68,9 @@ class GenerateNuclearSegmentationJob:
   @property
   def source_image_filename(self):
     if not hasattr(self, "_source_image_filename"):
-      self._source_image_filename = ImageFilename.parse(self.source_path.name)
+      print("Source: %s" % self.source_path)
+      print("Directory: %s" % self.source_dir)
+      self._source_image_filename = ImageFilename.parse(str(self.source_path.relative_to(self.source_dir)))
     return self._source_image_filename
 
   @property
@@ -83,7 +94,7 @@ class GenerateNuclearSegmentationJob:
     return self._cellpose_filtered
 
 
-def generate_nuclear_segmentation_cli_str(sources, destination, diameter):
+def generate_nuclear_segmentation_cli_str(sources, destination, source_dir, diameter):
   diameter_arguments = ["--diameter=%i" % diameter] if diameter != None else []
   return shlex.join([
     "pipenv",
@@ -91,6 +102,7 @@ def generate_nuclear_segmentation_cli_str(sources, destination, diameter):
     "python",
     __file__,
     "--destination=%s" % destination,
+    "--source_dir=%s" % source_dir,
     *diameter_arguments,
     *[str(source) for source in sources]
   ])
@@ -102,6 +114,7 @@ def generate_nuclear_segmentation_cli(app):
       GenerateNuclearSegmentationJob(
         source,
         app.params.destination,
+        app.params.source_dir,
         app.params.diameter
       ).run()
     except Exception as exception:
@@ -109,6 +122,7 @@ def generate_nuclear_segmentation_cli(app):
 
 generate_nuclear_segmentation_cli.add_param("sources", nargs="*")
 generate_nuclear_segmentation_cli.add_param("--destination", required=True)
+generate_nuclear_segmentation_cli.add_param("--source_dir", required=True)
 generate_nuclear_segmentation_cli.add_param("--diameter", type=int, default=100)
 
 if __name__ == "__main__":

@@ -93,7 +93,7 @@ class LSMImageFilenameGlob:
     if self.c != None:
       return "%i" % self.c
     else:
-      return "?"
+      return "?*"
 
   @property
   def suffix_glob(self):

@@ -20,6 +20,7 @@ class GenerateAllDistanceTransformsJob:
 
   def run(self):
     SwarmJob(
+      self.source,
       self.destination_path,
       self.job_name,
       self.jobs,
@@ -33,7 +34,7 @@ class GenerateAllDistanceTransformsJob:
     if not hasattr(self, "_jobs"):
       shards = shard_job_params(self.nuclear_mask_paths, FILES_PER_CALL_COUNT)
       self._jobs = [
-        generate_distance_transform_cli_str(shard, self.destination) for shard in shards
+        generate_distance_transform_cli_str(shard, self.destination, self.source) for shard in shards
       ]
     return self._jobs
 
@@ -57,7 +58,7 @@ class GenerateAllDistanceTransformsJob:
   
   @property
   def nuclear_mask_paths(self):
-    return self.source_path.glob("*_nuclear_mask_???.npy")
+    return self.source_path.rglob("*_nuclear_mask_???.npy")
 
 @cli.log.LoggingApp
 def generate_all_distance_transforms_cli(app):

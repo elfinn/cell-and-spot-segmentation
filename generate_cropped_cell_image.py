@@ -24,10 +24,11 @@ def load_source_image(source_image_path):
     return numpy.load(source_image_path, allow_pickle=True)
 
 class GenerateCroppedCellImageJob:
-  def __init__(self, source_image, source_mask, destination):
+  def __init__(self, source_image, source_mask, destination, source_dir):
     self.source_image = source_image
     self.source_mask = source_mask
     self.destination = destination
+    self.source_dir = Path(source_dir)
 
   def run(self):
     numpy.save(self.destination_filename, self.masked_cropped_image)
@@ -39,7 +40,14 @@ class GenerateCroppedCellImageJob:
   @property
   def destination_path(self):
     if not hasattr(self, "_destination_path"):
-      self._destination_path = destination_path(self.destination)
+      global_destination_path = Path(self.destination)
+      local_destination_path = Path(str(self.source_path.relative_to(self.source_dir))).parents[0]
+      path_to_make = global_destination_path / local_destination_path
+      self._destination_path = global_destination_path 
+      if not path_to_make.exists():
+        Path.mkdir(path_to_make, parents=True)
+      elif not path_to_make.is_dir():
+        raise Exception("destination already exists, but is not a directory")
     return self._destination_path
 
   @property
@@ -65,7 +73,7 @@ class GenerateCroppedCellImageJob:
   @property
   def source_image_filename(self):
     if not hasattr(self, "_source_image_filename"):
-      self._source_image_filename = ImageFilename.parse(self.source_image_path.name)
+      self._source_image_filename = ImageFilename.parse(self.source_image_path).relative_to(self.source_dir)
     return self._source_image_filename
 
   @property
@@ -75,7 +83,7 @@ class GenerateCroppedCellImageJob:
   @property
   def source_mask_suffix(self):
     if not hasattr(self, "_source_mask_suffix"):
-      self._source_mask_suffix = ImageFilename.parse(self.source_mask_path.name).suffix
+      self._source_mask_suffix = ImageFilename.parse(self.source_mask_path.relative_to(self.source_dir)).suffix
     return self._source_mask_suffix
 
   @property
@@ -133,8 +141,8 @@ class GenerateCroppedCellImageJob:
       else:
         self._masked_cropped_image = self.rect_cropped_image * self.nuclear_mask
     return self._masked_cropped_image
-          
-def generate_cropped_cell_image_cli_str(masks, destination):
+
+def generate_cropped_cell_image_cli_str(masks, destination, source_dir):
   serialized_masks_params = (str(param) for image_or_mask_param in masks for param in image_or_mask_param)
   return shlex.join([
     "pipenv",
@@ -142,6 +150,7 @@ def generate_cropped_cell_image_cli_str(masks, destination):
     "python",
     __file__,
     "--destination=%s" % destination,
+    "--source_dir=%s" % source_dir,
     *serialized_masks_params
   ])
 
@@ -154,12 +163,14 @@ def generate_cropped_cell_image_cli(app):
         source_image,
         source_mask,
         app.params.destination,
+        app.params.source_dir,
       ).run()
     except Exception as exception:
       traceback.print_exc()
 
 generate_cropped_cell_image_cli.add_param("masks", nargs="*")
 generate_cropped_cell_image_cli.add_param("--destination", required=True)
+generate_cropped_cell_image_cli.add_param("--source_dir", required=True)
 
 if __name__ == "__main__":
    generate_cropped_cell_image_cli.run()

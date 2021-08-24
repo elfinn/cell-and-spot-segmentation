@@ -27,6 +27,7 @@ class GenerateAllMaximumProjectionsJob:
   
   def run(self):
     SwarmJob(
+      self.source,
       self.destination_path,
       self.job_name,
       self.jobs,

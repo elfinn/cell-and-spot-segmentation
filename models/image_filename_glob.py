@@ -43,7 +43,6 @@ class ImageFilenameGlob:
         elif IMAGE_FILETYPE == 'LSM':
             self.glob = LSMImageFilenameGlob(experiment, well, timestamp, f, z, c, suffix, extension)
             
-
     def __str__(self):
       if IMAGE_FILETYPE == 'CV':
         return str(self.glob)

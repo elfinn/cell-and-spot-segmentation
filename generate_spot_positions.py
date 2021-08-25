@@ -39,6 +39,7 @@ class GenerateSpotPositionsJob:
     self,
     source,
     destination,
+    source_dir,
     user_determined_local_contrast_threshold=None,
     user_determined_radius=None,
     user_determined_global_threshold=None,
@@ -46,6 +47,7 @@ class GenerateSpotPositionsJob:
   ):
     self.source = source
     self.destination = destination
+    self.source_dir = Path(source_dir)
     self.user_determined_local_contrast_threshold = user_determined_local_contrast_threshold
     self.user_determined_radius = user_determined_radius
     self.user_determined_global_threshold = user_determined_global_threshold
@@ -59,7 +61,14 @@ class GenerateSpotPositionsJob:
   @property
   def destination_path(self):
    if not hasattr(self, "_destination_path"):
-      self._destination_path = destination_path(self.destination)
+      global_destination_path = Path(self.destination)
+      local_destination_path = Path(str(self.source_path.relative_to(self.source_dir))).parents[0]
+      path_to_make = global_destination_path / local_destination_path
+      self._destination_path = global_destination_path 
+      if not path_to_make.exists():
+        Path.mkdir(path_to_make, parents=True)
+      elif not path_to_make.is_dir():
+        raise Exception("destination already exists, but is not a directory")
    return self._destination_path
 
   def destination_filename_for_spot_index(self, spot_index):
@@ -77,7 +86,7 @@ class GenerateSpotPositionsJob:
   @property
   def source_image_filename(self):
     if not hasattr(self, "_source_image_filename"):
-      self._source_image_filename = ImageFilename.parse(self.source_path.name)
+      self._source_image_filename = ImageFilename.parse(str(self.source_path.relative_to(self.source_dir)))
     return self._source_image_filename
 
   @property
@@ -181,7 +190,7 @@ class GenerateSpotPositionsJob:
       if self.source_image_filename.c in configs:
         return configs[self.source_image_filename.c]
 
-def generate_spot_positions_cli_str(sources, destination, config=None):
+def generate_spot_positions_cli_str(sources, destination, source_dir, config=None):
   config_arguments = ["--config=%s" % config] if config != None else []
   return shlex.join([
     "pipenv",
@@ -189,6 +198,7 @@ def generate_spot_positions_cli_str(sources, destination, config=None):
     "python",
     __file__,
     "--destination=%s" % destination,
+    "--source_dir=%s" % source_dir,
     *config_arguments,
     *[str(source) for source in sources]
   ])
@@ -200,6 +210,7 @@ def generate_spot_positions_cli(app):
       GenerateSpotPositionsJob(
         source,
         app.params.destination,
+        app.params.source_dir,
         config=app.params.config
       ).run()
     except Exception as exception:
@@ -207,6 +218,7 @@ def generate_spot_positions_cli(app):
 
 generate_spot_positions_cli.add_param("sources", nargs="*")
 generate_spot_positions_cli.add_param("--destination", required=True)
+generate_spot_positions_cli.add_param("--source_dir", required=True)
 generate_spot_positions_cli.add_param("--config")
 
 if __name__ == "__main__":

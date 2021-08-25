@@ -23,6 +23,7 @@ class GenerateAllSpotPositionsJob:
 
   def run(self):
     SwarmJob(
+      self.source,
       self.destination_path,
       self.job_name,
       self.jobs,
@@ -36,7 +37,7 @@ class GenerateAllSpotPositionsJob:
     if not hasattr(self, "_jobs"):
       nuclear_mask_paths_shards = shard_job_params(self.nuclear_mask_paths, FILES_PER_CALL)
       self._jobs = [
-        generate_spot_positions_cli_str(nuclear_mask_paths_shard, self.destination, config=self.config)
+        generate_spot_positions_cli_str(nuclear_mask_paths_shard, self.destination, self.source, config=self.config)
         for nuclear_mask_paths_shard in nuclear_mask_paths_shards
       ]
     return self._jobs
@@ -61,7 +62,7 @@ class GenerateAllSpotPositionsJob:
   
   @property
   def nuclear_mask_paths(self):
-    return self.source_path.glob(str(ImageFilenameGlob(suffix="_maximum_projection_nuclear_mask_???", extension="npy")))
+    return self.source_path.rglob(str(ImageFilenameGlob(suffix="_maximum_projection_nuclear_mask_???", extension="npy")))
 
 @cli.log.LoggingApp
 def generate_all_spot_positions_cli(app):
@@ -69,6 +70,7 @@ def generate_all_spot_positions_cli(app):
     GenerateAllSpotPositionsJob(
       app.params.source,
       app.params.destination,
+      app.params.source_dir,
       config=app.params.config
     ).run()
   except Exception as exception:
@@ -76,6 +78,7 @@ def generate_all_spot_positions_cli(app):
 
 generate_all_spot_positions_cli.add_param("source")
 generate_all_spot_positions_cli.add_param("destination")
+generate_all_spot_positions_cli.add_param("source_dir")
 generate_all_spot_positions_cli.add_param("--config")
 
 if __name__ == "__main__":

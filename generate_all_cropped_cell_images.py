@@ -42,7 +42,7 @@ class GenerateAllCroppedCellImagesJob:
         for source_mask_path in self.source_mask_paths_for_source_image_path(source_image_path)
       ]
       shards = shard_job_params(masks, FILES_PER_CALL_COUNT)
-      self._jobs = [generate_cropped_cell_image_cli_str(shard, self.destination_path, self.source_images) for shard in shards]
+      self._jobs = [generate_cropped_cell_image_cli_str(shard, self.destination_path, self.source_images, self.source_masks) for shard in shards]
     return self._jobs
 
   @property

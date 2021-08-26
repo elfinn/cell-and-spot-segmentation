@@ -33,6 +33,7 @@ class GenerateAllSpotResultLinesJob:
   
   def run(self):
     SwarmJob(
+      self.spots_source_directory,
       self.destination_path,
       self.job_name,
       self.jobs,
@@ -48,6 +49,7 @@ class GenerateAllSpotResultLinesJob:
       self._jobs = [
         generate_spot_result_line_cli_str(
           spot_source_paths_shard,
+          self.spots_source_directory,
           self.z_centers_source_directory,
           self.distance_transforms_source_directory,
           self.nuclear_masks_source_directory_path,
@@ -73,7 +75,7 @@ class GenerateAllSpotResultLinesJob:
 
   @property
   def spot_source_paths(self):
-    return self.spots_source_directory_path.glob(str(ImageFilenameGlob(suffix="_nucleus_???_spot_*", extension="npy")))
+    return self.spots_source_directory_path.rglob(str(ImageFilenameGlob(suffix="_nucleus_???_spot_*", extension="npy")))
 
   @property
   def destination_path(self):

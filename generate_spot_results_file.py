@@ -32,7 +32,7 @@ class GenerateSpotResultsFileJob:
 
   @property
   def result_line_paths(self):
-    return self.source_path.glob(str(ImageFilenameGlob(suffix="_nucleus_???_spot_*", extension="csv")))
+    return self.source_path.rglob(str(ImageFilenameGlob(suffix="_nucleus_???_spot_*", extension="csv")))
   
   @property
   def arbitrary_result_line_path(self):
@@ -43,7 +43,7 @@ class GenerateSpotResultsFileJob:
   @property
   def arbitrary_result_line_image_filename(self):
     if not hasattr(self, "_arbitrary_result_line_image_filename"):
-      self._arbitrary_result_line_image_filename = ImageFilename.parse(self.arbitrary_result_line_path.name)
+      self._arbitrary_result_line_image_filename = ImageFilename.parse(str(self.arbitrary_result_line_path.relative_to(self.source_path)))
     return self._arbitrary_result_line_image_filename
 
   @property

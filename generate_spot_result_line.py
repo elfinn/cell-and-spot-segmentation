@@ -18,12 +18,14 @@ class GenerateSpotResultLineJob:
   def __init__(
     self,
     spot_source,
+    spot_source_directory,
     z_centers_source_directory,
     distance_transforms_source_directory,
     nuclear_masks_source_directory,
     destination
   ):
     self.spot_source = spot_source
+    self.spot_source_directory = Path(spot_source_directory)
     self.z_centers_source_directory = z_centers_source_directory
     self.distance_transforms_source_directory = distance_transforms_source_directory
     self.nuclear_masks_source_directory = nuclear_masks_source_directory
@@ -41,9 +43,7 @@ class GenerateSpotResultLineJob:
       "filename": str(self.source_image_filename),
       "experiment": self.source_image_filename.experiment,
       "well": self.source_image_filename.well,
-      "timepoint": self.source_image_filename.t,
       "field": self.source_image_filename.f,
-      "timeline": self.source_image_filename.l,
       "channel": self.source_image_filename.c,
       "nucleus_index": self.nucleus_index,
       "spot_index": self.spot_index,
@@ -58,12 +58,19 @@ class GenerateSpotResultLineJob:
   @property
   def destination_path(self):
     if not hasattr(self, "_destination_path"):
-      self._destination_path = destination_path(self.destination)
+      global_destination_path = Path(self.destination)
+      local_destination_path = Path(str(self.source_path.relative_to(self.spot_source_directory))).parents[0]
+      path_to_make = global_destination_path / local_destination_path
+      self._destination_path = global_destination_path 
+      if not path_to_make.exists():
+        Path.mkdir(path_to_make, parents=True)
+      elif not path_to_make.is_dir():
+        raise Exception("destination already exists, but is not a directory")
     return self._destination_path
 
   @property
   def destination_filename(self):
-    return self.destination_path / ("%s.csv" % self.source_path.stem)
+    return self.destination_path / ("%s.csv" % self.source_path.relative_to(self.spot_source_directory))
 
   @property
   def source_path(self):
@@ -74,7 +81,7 @@ class GenerateSpotResultLineJob:
   @property
   def source_image_filename(self):
     if not hasattr(self, "_source_image_filename"):
-      self._source_image_filename = ImageFilename.parse(self.source_path.name)
+      self._source_image_filename = ImageFilename.parse(str(self.source_path.relative_to(self.spot_source_directory)))
     return self._source_image_filename
   
   @property
@@ -217,6 +224,7 @@ def generate_spot_result_line_cli_str(
   z_centers_source_directory,
   distance_transforms_source_directory,
   nuclear_masks_source_directory,
+  spot_source_directory,
   destination
 ):
   return shlex.join([
@@ -227,6 +235,7 @@ def generate_spot_result_line_cli_str(
     "--z_centers_source_directory=%s" % z_centers_source_directory,
     "--distance_transforms_source_directory=%s" % distance_transforms_source_directory,
     "--nuclear_masks_source_directory=%s" % nuclear_masks_source_directory,
+    "--spot_source_directory=%s" % spot_source_directory,
     "--destination=%s" % destination,
     *[str(spot_source) for spot_source in spot_sources]
   ])
@@ -240,6 +249,7 @@ def generate_spot_result_line_cli(app):
         app.params.z_centers_source_directory,
         app.params.distance_transforms_source_directory,
         app.params.nuclear_masks_source_directory,
+        app.params.spot_source_directory,
         app.params.destination,
       ).run()
     except Exception as exception:
@@ -249,6 +259,7 @@ generate_spot_result_line_cli.add_param("spot_sources", nargs="*")
 generate_spot_result_line_cli.add_param("--z_centers_source_directory", required=True)
 generate_spot_result_line_cli.add_param("--distance_transforms_source_directory", required=True)
 generate_spot_result_line_cli.add_param("--nuclear_masks_source_directory", required=True)
+generate_spot_result_line_cli.add_param("--spot_source_directory", required=True)
 generate_spot_result_line_cli.add_param("--destination", required=True)
 
 if __name__ == "__main__":

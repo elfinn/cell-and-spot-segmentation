@@ -33,7 +33,7 @@ class RunStrategy(enum.Enum):
 
 class SwarmJob:
   run_strategy = RunStrategy.SWARM if os.environ.get('ENVIRONMENT') == 'production' else RunStrategy.LOCAL
-  file_type = "LSM" if os.environ.get('FILE_TYPE') == 'LSM' else 'CV'
+  file_type = "LSM" if os.environ.get('FILE_TYPE') == "LSM" else "CV"
     
   def __init__(self, source, destination_path, name, jobs, logdir, mem, files_count):
     self.source = source
@@ -66,7 +66,7 @@ class SwarmJob:
       "-g", str(self.mem),
       "--logdir", str(self.logdir),
       "-b", str(self.bundling),
-      "--sbatch", ("\"--export=MKL_NUM_THREADS=2, FILE_TYPE=\"%s\"\"", file_type)
+      "--sbatch", self.export_string
     ]
     LOGGER.warning(command)
     subprocess.run(command).check_returncode()
@@ -93,3 +93,9 @@ class SwarmJob:
     if not hasattr(self, "_swarm_file_path"):
       self._swarm_file_path = self.destination_path / ("%s.swarm" % self.name)
     return self._swarm_file_path
+
+  @property
+  def export_string(self):
+    if not hasattr(self, "_export_string"):
+        self._export_string = '"\"--export=MKL_NUM_THREADS=2,FILE_TYPE=\"%s\"\""' % self.file_type
+    return self._export_string

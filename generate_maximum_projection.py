@@ -41,7 +41,7 @@ class GenerateMaximumProjectionJob:
   @property
   def source_file_paths(self):
     print("looking for source files with pattern %s"%self.filename_pattern)
-    return self.source_directory_path.glob(self.filename_pattern)
+    return self.source_directory_path.rglob(self.filename_pattern)
 
   @property
   def maximum_projection(self):

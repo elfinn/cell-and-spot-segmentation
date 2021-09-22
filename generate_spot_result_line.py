@@ -51,6 +51,9 @@ class GenerateSpotResultLineJob:
       "center_y": self.center_y,
       "center_z": self.center_z,
       "center_r": self.center_r,
+      "area": self.area,
+      "eccentricity": self.eccentricity,
+      "solidity": self.solidity,
       "nuclear_mask_offset_x": self.nuclear_mask_offset_x,
       "nuclear_mask_offset_y": self.nuclear_mask_offset_y
     }
@@ -101,16 +104,28 @@ class GenerateSpotResultLineJob:
   @property
   def spot(self):
     if not hasattr(self, "_spot"):
-      self._spot = numpy.load(self.source_path)
+      self._spot = numpy.load(self.source_path, allow_pickle=True)
     return self._spot
 
   @property
   def center_x(self):
-    return self.spot[1]
+    return self.spot[0][1]
 
   @property
   def center_y(self):
-    return self.spot[0]
+    return self.spot[0][0]
+
+  @property
+  def area(self):
+    return self.spot[1]
+
+  @property
+  def eccentricity(self):
+    return self.spot[2]
+
+  @property
+  def solidity(self):
+    return self.spot[3]
 
   @property
   def z_centers_source_directory_path(self):

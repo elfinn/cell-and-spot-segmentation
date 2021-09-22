@@ -10,6 +10,7 @@ import cli.log
 import numpy
 import scipy.ndimage
 import skimage.feature
+import skimage.measure
 import skimage.filters
 import skimage.io
 import skimage.segmentation
@@ -128,13 +129,13 @@ class GenerateSpotPositionsJob:
   def spots(self):
     if not hasattr(self, "_spots"):
       self._spots = [
-        self.find_spot_center_of_mass(spot)
+        self.find_spot_props(spot)
         for spot
         in self.global_filtered_spots
       ]
     return self._spots
 
-  def find_spot_center_of_mass(self, integer_spot):
+  def find_spot_props(self, integer_spot):
     local_box_x_min = max(0, integer_spot[0]-10)
     local_box_y_min = max(0, integer_spot[1]-10)
     local_box_x_max = min(integer_spot[0]+10, numpy.shape(self.image)[0])
@@ -147,7 +148,13 @@ class GenerateSpotPositionsJob:
       integer_spot,
       tolerance=(self.image[integer_spot] - local_background) / 2
     )
-    return scipy.ndimage.center_of_mass(self.image, marker)
+    marker_int = marker.astype(numpy.uint8)
+    props = skimage.measure.regionprops(marker_int, self.image)
+    cog = scipy.ndimage.center_of_mass(self.image, marker)
+    props_list = (cog, props[0].area, props[0].eccentricity, props[0].solidity)
+    return props_list
+
+    #return scipy.ndimage.center_of_mass(self.image, marker)
   
   @property
   def image_background(self):

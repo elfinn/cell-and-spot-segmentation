@@ -14,9 +14,10 @@ FILES_PER_CALL = 20000
 MEMORY = 2
 
 class GenerateAllSpotPositionsJob:
-  def __init__(self, source, destination, log, config=None):
+  def __init__(self, source, destination, log, DAPI, config=None):
     self.source = source
     self.destination = destination
+    self.DAPI_channel = DAPI
     self.config = config
     self.logdir = log
     self.logger = logging.getLogger()
@@ -62,7 +63,14 @@ class GenerateAllSpotPositionsJob:
   
   @property
   def nuclear_mask_paths(self):
-    return self.source_path.rglob(str(ImageFilenameGlob(suffix="_maximum_projection_nuclear_mask_???", extension="npy")))
+    if not hasattr(self, "_nuclear_mask_paths"):
+        self._nuclear_mask_paths = [
+            image_file_path
+            for image_file_path
+            in self.source_path.rglob(str(ImageFilenameGlob(suffix="_maximum_projection_nuclear_mask_???", extension="npy")))
+            if ImageFilename.parse(str(image_file_path.relative_to(self.source_path))).c != self.DAPI_channel
+          ]
+    return self._nuclear_mask_paths
 
 @cli.log.LoggingApp
 def generate_all_spot_positions_cli(app):
@@ -71,6 +79,7 @@ def generate_all_spot_positions_cli(app):
       app.params.source,
       app.params.destination,
       app.params.source_dir,
+      app.params.DAPI_channel,
       config=app.params.config
     ).run()
   except Exception as exception:
@@ -79,6 +88,7 @@ def generate_all_spot_positions_cli(app):
 generate_all_spot_positions_cli.add_param("source")
 generate_all_spot_positions_cli.add_param("destination")
 generate_all_spot_positions_cli.add_param("source_dir")
+generate_all_spot_positions_cli.add_param("DAPI_channel")
 generate_all_spot_positions_cli.add_param("--config")
 
 if __name__ == "__main__":

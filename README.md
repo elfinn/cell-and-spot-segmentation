@@ -16,8 +16,9 @@ first install pipenv and jupyter before you install this pipeline. To install pi
 
 To install and set up the kernel for jupyter, use the following steps:
 1. Get all the files locally:
-> git clone github.com/elfinn/cell-and-spot-segmentation
+> git clone https://github.com/elfinn/cell-and-spot-segmentation
 2. From the cell-and-spot-segmentation folder, use pipenv to install all dependencies:
+> cd cell-and-spot-segmentation
 > pipenv install
 3. Create the jupyter kernel associated with the pipenv environment:
 > pipenv run python -m ipykernel install --user --name=cell-and-spot-segmentation

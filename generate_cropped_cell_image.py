@@ -4,7 +4,7 @@ import traceback
 from copy import copy
 from functools import lru_cache
 
-import cli.log
+import argparse
 import matplotlib.pyplot as plt
 import numpy
 import skimage.io
@@ -143,38 +143,35 @@ class GenerateCroppedCellImageJob:
         self._masked_cropped_image = self.rect_cropped_image * self.nuclear_mask
     return self._masked_cropped_image
 
-def generate_cropped_cell_image_cli_str(masks, destination, source_images_dir, source_masks_dir):
-  serialized_masks_params = (str(param) for image_or_mask_param in masks for param in image_or_mask_param)
+def generate_cropped_cell_image_cli_str(destination, source_images_dir, source_masks_dir):
   return shlex.join([
-    "pipenv",
-    "run",
-    "python",
+    "python3",
     __file__,
     "--destination=%s" % destination,
     "--source_images_dir=%s" % source_images_dir,
     "--source_masks_dir=%s" % source_masks_dir,
-    *serialized_masks_params
   ])
 
-@cli.log.LoggingApp
-def generate_cropped_cell_image_cli(app):
-  for mask_pair_start_index in (index * 2 for index in range(int(len(app.params.masks) / 2))):
-    source_image, source_mask = app.params.masks[mask_pair_start_index:mask_pair_start_index + 2]
+parser = argparse.ArgumentParser()
+parser.add_argument("serialized_files", nargs="*")
+parser.add_argument("--destination", required=True)
+parser.add_argument("--source_images_dir", required=True)
+parser.add_argument("--source_masks_dir", required=True)
+
+def generate_cropped_cell_image_cli(parser):
+  args = parser.parse_args()
+  for mask_pair_start_index in (index*2 for index in range(int(len(args.serialized_files)/2))):
+    source_image, source_mask = args.serialized_files[mask_pair_start_index : mask_pair_start_index + 2]
     try:
       GenerateCroppedCellImageJob(
         source_image,
         source_mask,
-        app.params.destination,
-        app.params.source_images_dir,
-        app.params.source_masks_dir,
+        args.destination,
+        args.source_images_dir,
+        args.source_masks_dir,
       ).run()
     except Exception as exception:
       traceback.print_exc()
 
-generate_cropped_cell_image_cli.add_param("masks", nargs="*")
-generate_cropped_cell_image_cli.add_param("--destination", required=True)
-generate_cropped_cell_image_cli.add_param("--source_images_dir", required=True)
-generate_cropped_cell_image_cli.add_param("--source_masks_dir", required=True)
-
 if __name__ == "__main__":
-   generate_cropped_cell_image_cli.run()
+   generate_cropped_cell_image_cli(parser)

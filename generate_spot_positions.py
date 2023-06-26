@@ -6,7 +6,7 @@ from copy import copy
 from pathlib import Path
 from functools import lru_cache
 
-import cli.log
+import argparse
 import numpy
 import scipy.ndimage
 import skimage.feature
@@ -151,10 +151,10 @@ class GenerateSpotPositionsJob:
     marker_int = marker.astype(numpy.uint8)
     props = skimage.measure.regionprops(marker_int, self.image)
     cog = scipy.ndimage.center_of_mass(self.image, marker)
-    props_list = (cog, props[0].area, props[0].eccentricity, props[0].solidity)
+    props_list = [props[0].area, props[0].eccentricity, props[0].solidity]
+    props_list.extend(cog)
     return props_list
 
-    #return scipy.ndimage.center_of_mass(self.image, marker)
   
   @property
   def image_background(self):
@@ -197,36 +197,35 @@ class GenerateSpotPositionsJob:
       if self.source_image_filename.c in configs:
         return configs[self.source_image_filename.c]
 
-def generate_spot_positions_cli_str(sources, destination, source_dir, config=None):
+def generate_spot_positions_cli_str(destination, source_dir, config=None):
   config_arguments = ["--config=%s" % config] if config != None else []
   return shlex.join([
-    "pipenv",
-    "run",
-    "python",
+    "python3",
     __file__,
     "--destination=%s" % destination,
     "--source_dir=%s" % source_dir,
     *config_arguments,
-    *[str(source) for source in sources]
   ])
 
-@cli.log.LoggingApp
-def generate_spot_positions_cli(app):
-  for source in app.params.sources:
+parser = argparse.ArgumentParser()
+parser.add_argument("sources", nargs="*")
+parser.add_argument("--destination", required=True)
+parser.add_argument("--source_dir", required=True)
+parser.add_argument("--config")
+
+def generate_spot_positions_cli(parser):
+  args = parser.parse_args()
+  for source in args.sources:
     try:
       GenerateSpotPositionsJob(
         source,
-        app.params.destination,
-        app.params.source_dir,
-        config=app.params.config
+        args.destination,
+        args.source_dir,
+        config=args.config
       ).run()
     except Exception as exception:
       traceback.print_exc()
 
-generate_spot_positions_cli.add_param("sources", nargs="*")
-generate_spot_positions_cli.add_param("--destination", required=True)
-generate_spot_positions_cli.add_param("--source_dir", required=True)
-generate_spot_positions_cli.add_param("--config")
 
 if __name__ == "__main__":
-   generate_spot_positions_cli.run()
+   generate_spot_positions_cli(parser)

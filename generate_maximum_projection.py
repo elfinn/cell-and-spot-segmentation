@@ -1,13 +1,14 @@
+
 import shlex
 import logging
 import re
 import traceback
 from pathlib import Path
 
-import cli.log
 import numpy
 import skimage.exposure
 import skimage.io
+import argparse
 
 from models.paths import *
 from models.z_sliced_image import ZSlicedImage
@@ -42,6 +43,7 @@ class GenerateMaximumProjectionJob:
   @property
   def source_file_paths(self):
     print("looking for source files with pattern %s"%self.filename_pattern)
+    print("found %s"%next(self.source_directory_path.rglob(self.filename_pattern)))
     return self.source_directory_path.rglob(self.filename_pattern)
 
   @property
@@ -66,30 +68,24 @@ class GenerateMaximumProjectionJob:
     if hasattr(self, "_z_center") or hasattr(self, "_maximum_projection"):
       raise Exception("already computed")
 
-    shaped = False
-    maximum_projection = None
-    summed_intensity = None
-    summed_z_values = None
-    weighted_summed_z_values = None
+    first = next(self.source_z_sliced_images)
+    maximum_projection = first.image
+    summed_intensity = numpy.int32(first.image)
+    weighted_summed_z_values = numpy.int32(first.image * first.z)
+    
     for source_z_sliced_image in self.source_z_sliced_images:
-      if not shaped:
-        shaped = True
-        maximum_projection = numpy.zeros_like(source_z_sliced_image.image)
-        summed_intensity = numpy.int32(numpy.zeros_like(source_z_sliced_image.image))
-        summed_z_values = numpy.int32(numpy.zeros_like(source_z_sliced_image.image))
-        weighted_summed_z_values = numpy.int32(numpy.zeros_like(source_z_sliced_image.image))
 
       maximum_projection = numpy.fmax(maximum_projection, source_z_sliced_image.image)
       summed_intensity = summed_intensity + source_z_sliced_image.image
-      summed_z_values = summed_z_values + source_z_sliced_image.image
       weighted_summed_z_values = weighted_summed_z_values + (source_z_sliced_image.image * source_z_sliced_image.z)
         
     self._maximum_projection = maximum_projection
     self._summed_intensity = summed_intensity
-
-    zero_adjusted_summed_z_values = summed_z_values + ((summed_z_values == 0) * numpy.ones_like(summed_z_values))
-    zero_adjusted_weighted_summed_z_values = weighted_summed_z_values + ((weighted_summed_z_values == 0) * numpy.ones_like(weighted_summed_z_values))
-    self._z_center = (zero_adjusted_weighted_summed_z_values / zero_adjusted_summed_z_values).astype(numpy.float16)
+    zero_adjusted_summed_intensity = summed_intensity
+    zero_adjusted_summed_intensity[zero_adjusted_summed_intensity == 0] = 1
+    zero_adjusted_weighted_summed_z_values = weighted_summed_z_values
+    zero_adjusted_weighted_summed_z_values[zero_adjusted_weighted_summed_z_values == 0] = 1
+    self._z_center = (zero_adjusted_weighted_summed_z_values / zero_adjusted_summed_intensity).astype(numpy.float16)
 
   @property
   def source_z_sliced_images(self):
@@ -124,32 +120,30 @@ class GenerateMaximumProjectionJob:
   def summed_intensity_destination_filename(self):
     return "%s%s" % (self.destination_filename_prefix, "_summed_intensity")
 
-def generate_maximum_projection_cli_str(source_directory, filename_patterns, destination):
+def generate_maximum_projection_cli_str(source_directory, destination):
   return shlex.join([
-    "pipenv",
-    "run",
-    "python",
+    "python3",
     __file__,
     "--destination=%s" % destination,
-    "--source_directory=%s" % source_directory,
-    *(str(filename_pattern) for filename_pattern in filename_patterns)
+    "--source_directory=%s" % source_directory
   ])
 
-@cli.log.LoggingApp
-def generate_maximum_projection_cli(app):
-  for filename_pattern in app.params.filename_patterns:
+parser = argparse.ArgumentParser()
+parser.add_argument("--source_directory", required=True)
+parser.add_argument("--destination", required=True)
+parser.add_argument("filename_patterns", nargs="*")
+
+def generate_maximum_projection_cli(parser):
+  args = parser.parse_args()
+  for filename_pattern in args.filename_patterns:
     try:
       GenerateMaximumProjectionJob(
-        app.params.source_directory,
+        args.source_directory,
         filename_pattern,
-        app.params.destination
+        args.destination
       ).run()
     except Exception as exception:
       traceback.print_exc()
 
-generate_maximum_projection_cli.add_param("--source_directory", required=True)
-generate_maximum_projection_cli.add_param("--destination", required=True)
-generate_maximum_projection_cli.add_param("filename_patterns", nargs="*")
-
 if __name__ == "__main__":
-   generate_maximum_projection_cli.run()
+   generate_maximum_projection_cli(parser)

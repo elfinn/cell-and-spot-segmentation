@@ -1,6 +1,6 @@
 import traceback
 from datetime import datetime
-import cli.log
+import argparse
 import logging
 
 from generate_spot_positions import generate_spot_positions_cli_str
@@ -13,6 +13,7 @@ from models.image_filename_glob import ImageFilenameGlob
 FILES_PER_CALL = 20000
 MEMORY = 2
 
+LOGGER = logging.getLogger()
 class GenerateAllSpotPositionsJob:
   def __init__(self, source, destination, log, DAPI, config=None):
     self.source = source
@@ -27,21 +28,28 @@ class GenerateAllSpotPositionsJob:
       self.source,
       self.destination_path,
       self.job_name,
-      self.jobs,
+      self.file_dictionary,
+      self.cli_str,
       self.logdir,
       MEMORY,
       FILES_PER_CALL
     ).run()
 
   @property
-  def jobs(self):
-    if not hasattr(self, "_jobs"):
-      nuclear_mask_paths_shards = shard_job_params(self.nuclear_mask_paths, FILES_PER_CALL)
-      self._jobs = [
-        generate_spot_positions_cli_str(nuclear_mask_paths_shard, self.destination, self.source, config=self.config)
-        for nuclear_mask_paths_shard in nuclear_mask_paths_shards
-      ]
-    return self._jobs
+  def cli_str(self):
+    if not hasattr(self, "_cli_str"):
+      self._cli_str = generate_spot_positions_cli_str(self.destination, self.source, config=self.config)
+    return self._cli_str
+
+  @property
+  def file_dictionary(self):
+    if not hasattr(self, "_file_dictionary"):
+      self._file_dictionary = self.destination_path / "input_file_dictionary.txt"
+      LOGGER.warning("Generating file dictionary (this can take a while)")
+      with self._file_dictionary.open("w") as file_dictionary:
+        for mask in self.nuclear_mask_paths:
+          file_dictionary.write("%s\n"%mask)
+    return self._file_dictionary
 
   @property
   def job_name(self):
@@ -67,29 +75,30 @@ class GenerateAllSpotPositionsJob:
         self._nuclear_mask_paths = [
             image_file_path
             for image_file_path
-            in self.source_path.rglob(str(ImageFilenameGlob(suffix="_maximum_projection_nuclear_mask_???", extension="npy")))
+            in self.source_path.rglob(str(ImageFilenameGlob(suffix="_maximum_projection_nucleus_???", extension="npy")))
             if ImageFilename.parse(str(image_file_path.relative_to(self.source_path))).c != self.DAPI_channel
           ]
     return self._nuclear_mask_paths
 
-@cli.log.LoggingApp
+parser = argparse.ArgumentParser()
+parser.add_argument("source")
+parser.add_argument("destination")
+parser.add_argument("source_dir")
+parser.add_argument("DAPI_channel")
+parser.add_argument("--config")
+
 def generate_all_spot_positions_cli(app):
+  args = parser.parse_args()
   try:
     GenerateAllSpotPositionsJob(
-      app.params.source,
-      app.params.destination,
-      app.params.source_dir,
-      app.params.DAPI_channel,
-      config=app.params.config
+      args.source,
+      args.destination,
+      args.source_dir,
+      args.DAPI_channel,
+      config=args.config
     ).run()
   except Exception as exception:
     traceback.print_exc()
 
-generate_all_spot_positions_cli.add_param("source")
-generate_all_spot_positions_cli.add_param("destination")
-generate_all_spot_positions_cli.add_param("source_dir")
-generate_all_spot_positions_cli.add_param("DAPI_channel")
-generate_all_spot_positions_cli.add_param("--config")
-
 if __name__ == "__main__":
-   generate_all_spot_positions_cli.run()
+   generate_all_spot_positions_cli(parser)

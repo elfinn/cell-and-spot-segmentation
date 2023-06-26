@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from time import sleep
 
-import cli.log
+import argparse
 
 from generate_maximum_projection import generate_maximum_projection_cli_str
 from models.image_filename import *
@@ -18,6 +18,7 @@ from models.swarm_job import SwarmJob, shard_job_params
 FILES_PER_CALL_COUNT = 2000
 MEMORY = 2
 
+LOGGER = logging.getLogger()
 class GenerateAllMaximumProjectionsJob:
   def __init__(self, source, destination, log):
     self.source = source
@@ -30,27 +31,31 @@ class GenerateAllMaximumProjectionsJob:
       self.source,
       self.destination_path,
       self.job_name,
-      self.jobs,
+      self.file_dictionary,
+      self.cli_str,
       self.logdir,
       MEMORY,
       FILES_PER_CALL_COUNT
     ).run()
 
+    
   @property
-  def jobs(self):
-    if not hasattr(self, "_jobs"):
-      image_filename_constraints_shards = shard_job_params(
-        self.distinct_image_filename_globs,
-        FILES_PER_CALL_COUNT
-      )
-      self._jobs = [
-        generate_maximum_projection_cli_str(
+  def cli_str(self):
+    if not hasattr(self, "_cli_str"):
+      self._cli_str = generate_maximum_projection_cli_str(
           self.source,
-          image_filename_constraints_shard,
-          self.destination
-        ) for image_filename_constraints_shard in image_filename_constraints_shards
-      ]
-    return self._jobs
+          self.destination)
+    return self._cli_str
+
+  @property
+  def file_dictionary(self):
+    if not hasattr(self, "_file_dictionary"):
+      self._file_dictionary = self.destination_path / "input_file_dictionary.txt"
+      LOGGER.warning("Generating file dictionary (this can take a while)")
+      with self._file_dictionary.open("w") as file_dictionary:
+        for position in self.distinct_image_filename_globs:
+            file_dictionary.write("%s\n"%position)
+    return self._file_dictionary
 
   @property
   def job_name(self):
@@ -88,18 +93,19 @@ class GenerateAllMaximumProjectionsJob:
       ))
     return self._distinct_image_filename_globs
 
-@cli.log.LoggingApp
-def generate_all_maximum_projections_cli(app):
+parser = argparse.ArgumentParser()
+parser.add_argument("source")
+parser.add_argument("destination")
+
+def generate_all_maximum_projections_cli(parser):
+  args = parser.parse_args()
   try:
     GenerateAllMaximumProjectionsJob(
-      app.params.source,
-      app.params.destination
+      args.source,
+      args.destination
     ).run()
   except Exception as exception:
     traceback.print_exc()
 
-generate_all_maximum_projections_cli.add_param("source")
-generate_all_maximum_projections_cli.add_param("destination")
-
 if __name__ == "__main__":
-  generate_all_maximum_projections_cli.run()
+  generate_all_maximum_projections_cli(parser)

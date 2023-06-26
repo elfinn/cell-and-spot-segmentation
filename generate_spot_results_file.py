@@ -1,6 +1,6 @@
 import traceback
 
-import cli.log
+import argparse
 
 from models.image_filename import ImageFilename
 from models.image_filename_glob import ImageFilenameGlob
@@ -55,7 +55,7 @@ class GenerateSpotResultsFileJob:
   @property
   def destination_filename(self):
     if not hasattr(self, "_destination_filename"):
-      self._destination_filename = self.destination_path / ("%s_spot_positions.csv" % self.arbitrary_result_line_image_filename.experiment)
+      self._destination_filename = self.destination_path / ("%s_spot_positions.csv" % self.arbitrary_result_line_image_filename.date)
     return self._destination_filename
   
   @property
@@ -65,19 +65,19 @@ class GenerateSpotResultsFileJob:
         self._headers = next(artibrary_result_line_file)
     return self._headers
 
+parser = argparse.ArgumentParser()
+parser.add_argument("source")
+parser.add_argument("destination")
 
-@cli.log.LoggingApp
-def generate_spot_results_file_cli(app):
+def generate_spot_results_file_cli(parser):
+  args=parser.parse_args()
   try:
     GenerateSpotResultsFileJob(
-      app.params.source,
-      app.params.destination,
+      args.source,
+      args.destination,
     ).run()
   except Exception as exception:
     traceback.print_exc()
 
-generate_spot_results_file_cli.add_param("source")
-generate_spot_results_file_cli.add_param("destination")
-
 if __name__ == "__main__":
-   generate_spot_results_file_cli.run()
+   generate_spot_results_file_cli(parser)

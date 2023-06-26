@@ -1,7 +1,7 @@
 import shlex
 import traceback
 
-import cli.log
+import argparse
 import numpy
 import skimage.measure
 
@@ -21,7 +21,7 @@ class GenerateNuclearMasksJob:
 
   def indexed_destination_filename(self, index):
     source_relative_path = str(self.source_path.relative_to(self.source_dir))
-    return self.destination_path / source_relative_path.replace("_nuclear_segmentation", ("_nuclear_mask_%03i" % index))
+    return self.destination_path / source_relative_path.replace("_nuc_seg", ("_nucleus_%03i" % index))
 
   @property
   def destination_path(self):
@@ -62,32 +62,30 @@ class GenerateNuclearMasksJob:
       ]
     return self._nuclear_masks
 
-def generate_nuclear_masks_cli_str(sources, destination, source_dir):
+def generate_nuclear_masks_cli_str(destination, source_dir):
   return shlex.join([
-    "pipenv",
-    "run",
-    "python",
+    "python3",
     __file__,
     "--destination=%s" % destination,
-    "--source_dir=%s" % source_dir,
-    *[str(source) for source in sources]
+    "--source_dir=%s" % source_dir
   ])
 
-@cli.log.LoggingApp
-def generate_nuclear_masks_cli(app):
-  for source in app.params.sources:
+parser = argparse.ArgumentParser()
+parser.add_argument("sources", nargs="*")
+parser.add_argument("--destination", required=True)
+parser.add_argument("--source_dir", required=True)
+
+def generate_nuclear_masks_cli(parser):
+  args = parser.parse_args()
+  for source in args.sources:
     try:
       GenerateNuclearMasksJob(
         source,
-        app.params.destination,
-        app.params.source_dir,
+        args.destination,
+        args.source_dir,
       ).run()
     except Exception as exception:
       traceback.print_exc()
 
-generate_nuclear_masks_cli.add_param("sources", nargs="*")
-generate_nuclear_masks_cli.add_param("--destination", required=True)
-generate_nuclear_masks_cli.add_param("--source_dir", required=True)
-
 if __name__ == "__main__":
-   generate_nuclear_masks_cli.run()
+   generate_nuclear_masks_cli(parser)

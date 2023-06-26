@@ -4,8 +4,8 @@ import re
 import traceback
 from copy import copy
 from pathlib import Path
+import argparse
 
-import cli.log
 import matplotlib.pyplot as plt
 import numpy
 import scipy
@@ -51,11 +51,10 @@ class GenerateNuclearSegmentationJob:
   def destination_image_filename(self):
     if not hasattr(self, "_destination_image_filename"):
       self._destination_image_filename = copy(self.source_image_filename)
-      if hasattr(self.source_image_filename, "a"):
-            self._destination_image_filename.a = None
-      self._destination_image_filename.z = None
+      if hasattr(self.source_image_filename, "z"):
+            self._destination_image_filename.z = None
       self._destination_image_filename.c = None
-      self._destination_image_filename.suffix = "_nuclear_segmentation"
+      self._destination_image_filename.suffix = "_nuc_seg"
       self._destination_image_filename.extension = "npy"
     return self._destination_image_filename
 
@@ -94,36 +93,34 @@ class GenerateNuclearSegmentationJob:
     return self._cellpose_filtered
 
 
-def generate_nuclear_segmentation_cli_str(sources, destination, source_dir, diameter):
+def generate_nuclear_segmentation_cli_str(destination, source_dir, diameter):
   diameter_arguments = ["--diameter=%i" % diameter] if diameter != None else []
   return shlex.join([
-    "pipenv",
-    "run",
-    "python",
+    "python3",
     __file__,
     "--destination=%s" % destination,
     "--source_dir=%s" % source_dir,
     *diameter_arguments,
-    *[str(source) for source in sources]
   ])
 
-@cli.log.LoggingApp
-def generate_nuclear_segmentation_cli(app):
-  for source in app.params.sources:
+parser = argparse.ArgumentParser()
+parser.add_argument("sources", nargs="*")
+parser.add_argument("--destination", required=True)
+parser.add_argument("--source_dir", required=True)
+parser.add_argument("--diameter", type=int, default=100)
+
+def generate_nuclear_segmentation_cli(parser):
+  args = parser.parse_args()
+  for source in args.sources:
     try:
       GenerateNuclearSegmentationJob(
         source,
-        app.params.destination,
-        app.params.source_dir,
-        app.params.diameter
+        args.destination,
+        args.source_dir,
+        args.diameter
       ).run()
     except Exception as exception:
       traceback.print_exc()
 
-generate_nuclear_segmentation_cli.add_param("sources", nargs="*")
-generate_nuclear_segmentation_cli.add_param("--destination", required=True)
-generate_nuclear_segmentation_cli.add_param("--source_dir", required=True)
-generate_nuclear_segmentation_cli.add_param("--diameter", type=int, default=100)
-
 if __name__ == "__main__":
-   generate_nuclear_segmentation_cli.run()
+   generate_nuclear_segmentation_cli(parser)

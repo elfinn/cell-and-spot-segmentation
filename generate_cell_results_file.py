@@ -1,6 +1,6 @@
 import traceback
 
-import cli.log
+import argparse
 
 from models.image_filename import ImageFilename
 from models.image_filename_glob import ImageFilenameGlob
@@ -32,7 +32,7 @@ class GenerateCellResultsFileJob:
 
   @property
   def result_line_paths(self):
-    return self.source_path.rglob(str(ImageFilenameGlob(suffix="_summed_intensity_nuclear_mask_???", extension="csv")))
+    return self.source_path.rglob(str(ImageFilenameGlob(suffix="_summed_intensity_nucleus_???", extension="csv")))
   
   @property
   def arbitrary_result_line_path(self):
@@ -55,7 +55,7 @@ class GenerateCellResultsFileJob:
   @property
   def destination_filename(self):
     if not hasattr(self, "_destination_filename"):
-      self._destination_filename = self.destination_path / ("%s_cell_intensities.csv" % self.arbitrary_result_line_image_filename.experiment)
+      self._destination_filename = self.destination_path / ("%s_cell_intensities.csv" % self.arbitrary_result_line_image_filename.date)
     return self._destination_filename
   
   @property
@@ -65,19 +65,19 @@ class GenerateCellResultsFileJob:
         self._headers = next(artibrary_result_line_file)
     return self._headers
 
+parser = argparse.ArgumentParser()
+parser.add_argument("source")
+parser.add_argument("destination")
 
-@cli.log.LoggingApp
-def generate_cell_results_file_cli(app):
+def generate_cell_results_file_cli(parser):
+  args = parser.parse_args()
   try:
     GenerateCellResultsFileJob(
-      app.params.source,
-      app.params.destination,
+      args.source,
+      args.destination,
     ).run()
   except Exception as exception:
     traceback.print_exc()
 
-generate_cell_results_file_cli.add_param("source")
-generate_cell_results_file_cli.add_param("destination")
-
 if __name__ == "__main__":
-   generate_cell_results_file_cli.run()
+   generate_cell_results_file_cli(parser)

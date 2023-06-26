@@ -1,6 +1,6 @@
 import traceback
 from datetime import datetime
-import cli.log
+import argparse
 import logging
 
 from generate_spot_result_line import generate_spot_result_line_cli_str
@@ -13,6 +13,7 @@ from models.swarm_job import SwarmJob, shard_job_params
 FILES_PER_CALL_COUNT = 20000
 MEMORY = 2
 
+LOGGER = logging.getLogger()
 class GenerateAllSpotResultLinesJob:
   def __init__(
     self,
@@ -36,28 +37,33 @@ class GenerateAllSpotResultLinesJob:
       self.spots_source_directory,
       self.destination_path,
       self.job_name,
-      self.jobs,
+      self.file_dictionary,
+      self.cli_str,
       self.logdir,
       MEMORY,
       FILES_PER_CALL_COUNT
     ).run()
 
   @property
-  def jobs(self):
-    if not hasattr(self, "_jobs"):
-      spot_source_paths_shards = shard_job_params(self.spot_source_paths, FILES_PER_CALL_COUNT)
-      self._jobs = [
-        generate_spot_result_line_cli_str(
-          spot_source_paths_shard,
+  def file_dictionary(self):
+    if not hasattr(self, "_file_dictionary"):
+      self._file_dictionary = self.destination_path / "input_file_dictionary.txt"
+      LOGGER.warning("Generating file dictionary (this can take a while)")
+      with self._file_dictionary.open("w") as file_dictionary:
+        for path in self.spot_source_paths:
+          file_dictionary.write("%s\n"%path)
+    return self._file_dictionary
+    
+  @property
+  def cli_str(self):
+    if not hasattr(self, "_cli_str"):
+      self._cli_str = generate_spot_result_line_cli_str(
           self.spots_source_directory,
           self.z_centers_source_directory,
           self.distance_transforms_source_directory,
           self.nuclear_masks_source_directory_path,
-          self.destination
-        )
-        for spot_source_paths_shard in spot_source_paths_shards
-      ]
-    return self._jobs
+          self.destination)
+    return self._cli_str
 
   @property
   def job_name(self):
@@ -83,24 +89,25 @@ class GenerateAllSpotResultLinesJob:
       self._destination_path = destination_path(self.destination)
     return self._destination_path
 
-@cli.log.LoggingApp
-def generate_all_spot_result_lines_cli(app):
+parser = argparse.ArgumentParser()
+parser.add_argument("spots_source_directory", default="todo", nargs="?")
+parser.add_argument("z_centers_source_directory", default="todo", nargs="?")
+parser.add_argument("distance_transforms_source_directory", default="todo", nargs="?")
+parser.add_argument("nuclear_masks_source_directory_path", default="todo", nargs="?")
+parser.add_argument("destination", default="\\hpc-prj\\finn\\data\\Results\\orphan_lines\\", nargs="?")
+
+def generate_all_spot_result_lines_cli(parser):
+  args = parser.parse_args()
   try:
     GenerateAllSpotResultLinesJob(
-      app.params.spots_source_directory,
-      app.params.z_centers_source_directory,
-      app.params.distance_transforms_source_directory,
-      app.params.nuclear_masks_source_directory_path,
-      app.params.destination,
+      args.spots_source_directory,
+      args.z_centers_source_directory,
+      args.distance_transforms_source_directory,
+      args.nuclear_masks_source_directory_path,
+      args.destination,
     ).run()
   except Exception as exception:
     traceback.print_exc()
 
-generate_all_spot_result_lines_cli.add_param("spots_source_directory", default="todo", nargs="?")
-generate_all_spot_result_lines_cli.add_param("z_centers_source_directory", default="todo", nargs="?")
-generate_all_spot_result_lines_cli.add_param("distance_transforms_source_directory", default="todo", nargs="?")
-generate_all_spot_result_lines_cli.add_param("nuclear_masks_source_directory_path", default="todo", nargs="?")
-generate_all_spot_result_lines_cli.add_param("destination", default="C:\\\\Users\\finne\\Documents\\python\\spot_result_lines\\", nargs="?")
-
 if __name__ == "__main__":
-   generate_all_spot_result_lines_cli.run()
+   generate_all_spot_result_lines_cli(parser)

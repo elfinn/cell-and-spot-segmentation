@@ -1,4 +1,4 @@
-import cli.log
+import argparse
 from datetime import datetime
 import traceback
 from pathlib import Path
@@ -13,6 +13,7 @@ from models.image_filename_glob import ImageFilenameGlob
 FILES_PER_CALL_COUNT = 10
 MEMORY = 8
 
+LOGGER = logging.getLogger()
 class GenerateAllNuclearSegmentationsJob:
   def __init__(self, source, destination, log, diameter, DAPI_channel=1):
     self.source = source
@@ -27,21 +28,29 @@ class GenerateAllNuclearSegmentationsJob:
       self.source,
       self.destination_path,
       self.job_name,
-      self.jobs,
+      self.file_dictionary,
+      self.cli_str,
       self.logdir,
       MEMORY,
       FILES_PER_CALL_COUNT
     ).run()
 
+    
   @property
-  def jobs(self):
-    if not hasattr(self, "_jobs"):
-      source_filenames_shards = shard_job_params(self.source_filenames, FILES_PER_CALL_COUNT)
-      self._jobs = [
-        generate_nuclear_segmentation_cli_str(source_filenames_shard, self.destination, self.source, self.diameter)
-        for source_filenames_shard in source_filenames_shards
-      ]
-    return self._jobs
+  def cli_str(self):
+    if not hasattr(self, "_cli_str"):
+      self._cli_str = generate_nuclear_segmentation_cli_str(self.destination, self.source, self.diameter)
+    return self._cli_str
+
+  @property
+  def file_dictionary(self):
+    if not hasattr(self, "_file_dictionary"):
+      self._file_dictionary = self.destination_path / "input_file_dictionary.txt"
+      LOGGER.warning("Generating file dictionary (this can take a while)")
+      with self._file_dictionary.open("w") as file_dictionary:
+        for file in self.source_filenames:
+            file_dictionary.write("%s\n"%file)
+    return self._file_dictionary
 
   @property
   def job_name(self):
@@ -67,20 +76,21 @@ class GenerateAllNuclearSegmentationsJob:
       self._destination_path = destination_path(self.destination)
     return self._destination_path
 
-@cli.log.LoggingApp
-def generate_all_nuclear_segmentations(app):
+parser = argparse.ArgumentParser()
+parser.add_argument("source")
+parser.add_argument("destination")
+parser.add_argument("--diameter", type=int)
+
+def generate_all_nuclear_segmentations(parser):
+  args = parser.parse_args()
   try:
     GenerateAllNuclearSegmentationsJob(
-      app.params.source,
-      app.params.destination,
-      app.params.diameter
+      args.source,
+      args.destination,
+      args.diameter
     ).run()
   except Exception as exception:
     traceback.print_exc()
 
-generate_all_nuclear_segmentations.add_param("source")
-generate_all_nuclear_segmentations.add_param("destination")
-generate_all_nuclear_segmentations.add_param("--diameter", type=int)
-
 if __name__ == "__main__":
-  generate_all_nuclear_segmentations.run()
+  generate_all_nuclear_segmentations(parser)

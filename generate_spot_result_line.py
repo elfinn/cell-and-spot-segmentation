@@ -6,10 +6,11 @@ import traceback
 from copy import copy
 from pathlib import Path
 
-import cli.log
+import argparse
 import numpy
 
 from models.image_filename import ImageFilename
+from models.image_filename_glob import ImageFilenameGlob
 from models.paths import *
 
 SPOT_RESULT_FILE_SUFFIX_RE = re.compile("_nucleus_(?P<nucleus_index>\d{3})_spot_(?P<spot_index>\d+)")
@@ -41,8 +42,9 @@ class GenerateSpotResultLineJob:
   def csv_values(self):
     return {
       "filename": str(self.source_image_filename),
-      "experiment": self.source_image_filename.experiment,
-      "well": self.source_image_filename.well,
+      "date": self.date,
+      "group" : self.source_image_filename.group,
+      "position": self.source_image_filename.position,
       "field": self.source_image_filename.f,
       "channel": self.source_image_filename.c,
       "nucleus_index": self.nucleus_index,
@@ -73,7 +75,11 @@ class GenerateSpotResultLineJob:
 
   @property
   def destination_filename(self):
-    return self.destination_path / ("%s.csv" % self.source_path.relative_to(self.spot_source_directory))
+    if not hasattr (self, "_destination_filename"):
+        destination_line_filename = copy(self.source_image_filename)
+        destination_line_filename.extension = "csv"
+        self._destination_filename = self.destination_path / str(destination_line_filename)
+    return self._destination_filename
 
   @property
   def source_path(self):
@@ -108,24 +114,35 @@ class GenerateSpotResultLineJob:
     return self._spot
 
   @property
+  def date(self):
+    long_date_re = re.compile("(\d{4})-(\d{2})-(\d{2})")
+    if not hasattr(self, "_date"):
+      self._date = self.source_image_filename.date
+      long_date_match = long_date_re.match(self._date)
+      if(long_date_match):
+        self._date = str(long_date_match[0])+str(long_date_match[1])+str(long_date_match[2])
+    return self._date
+        
+
+  @property
   def center_x(self):
-    return self.spot[0][1]
+    return self.spot[4]
 
   @property
   def center_y(self):
-    return self.spot[0][0]
+    return self.spot[3]
 
   @property
   def area(self):
-    return self.spot[1]
+    return self.spot[0]
 
   @property
   def eccentricity(self):
-    return self.spot[2]
+    return self.spot[1]
 
   @property
   def solidity(self):
-    return self.spot[3]
+    return self.spot[2]
 
   @property
   def z_centers_source_directory_path(self):
@@ -147,7 +164,7 @@ class GenerateSpotResultLineJob:
   def z_center_image_filename(self):
     if not hasattr(self, "_z_center_image_filename"):
       self._z_center_image_filename = copy(self.source_image_filename)
-      self._z_center_image_filename.suffix = "_z_center_nuclear_mask_%s" % self.nucleus_index
+      self._z_center_image_filename.suffix = "_z_center_nucleus_%s" % self.nucleus_index
     return self._z_center_image_filename
 
   @property
@@ -171,21 +188,12 @@ class GenerateSpotResultLineJob:
     return self.z_center_image[self.pixel_center]
 
   @property
-  def distance_transform_image_filename(self):
-    if not hasattr(self, "_distance_transform_image_filename"):
-      self._distance_transform_image_filename = copy(self.source_image_filename)
-      self._distance_transform_image_filename.suffix = "_distance_transform_%s" % self.nucleus_index
-      self._distance_transform_image_filename.a = None
-      self._distance_transform_image_filename.z = None
-      self._distance_transform_image_filename.c = None
-    return self._distance_transform_image_filename
-  
-  @property
   def distance_transform_image_path(self):
-    if not hasattr(self, "_distance_transform_image_path"):
-      self._distance_transform_image_path = self.distance_transforms_source_directory_path / str(self.distance_transform_image_filename)
-    return self._distance_transform_image_path
-
+    if not hasattr(self, "_distance_transform_image_filename"):
+      distance_transform_filename_glob = ImageFilenameGlob.from_image_filename(self.source_image_filename, excluding_keys = ["a", "c", "z"])
+      distance_transform_filename_glob.glob.suffix = "_dt_%s" % self.nucleus_index
+    return next(self.distance_transforms_source_directory_path.rglob(str(distance_transform_filename_glob)))
+  
   @property
   def distance_transform_image(self):
     if not hasattr(self, "_distance_transform_image"):
@@ -221,21 +229,11 @@ class GenerateSpotResultLineJob:
   @property
   def nuclear_mask_path(self):
     if not hasattr(self, "_nuclear_mask_path"):
-      self._nuclear_mask_path = self.nuclear_masks_source_directory_path / str(self.nuclear_mask_image_filename)
-    return self._nuclear_mask_path
-
-  @property
-  def nuclear_mask_image_filename(self):
-    if not hasattr(self, "_nuclear_mask_image_filename"):
-      self._nuclear_mask_image_filename = copy(self.source_image_filename)
-      self._nuclear_mask_image_filename.suffix = "_nuclear_mask_%s" % self.nucleus_index
-      self._nuclear_mask_image_filename.a = None
-      self._nuclear_mask_image_filename.z = None
-      self._nuclear_mask_image_filename.c = None
-    return self._nuclear_mask_image_filename
+      nuclear_mask_glob = ImageFilenameGlob.from_image_filename(self.source_image_filename, excluding_keys = ["a", "c", "z"])
+      nuclear_mask_glob.glob.suffix = "_nucleus_%s" % self.nucleus_index
+    return next(self.nuclear_masks_source_directory_path.rglob(str(nuclear_mask_glob)))
 
 def generate_spot_result_line_cli_str(
-  spot_sources,
   z_centers_source_directory,
   distance_transforms_source_directory,
   nuclear_masks_source_directory,
@@ -243,39 +241,37 @@ def generate_spot_result_line_cli_str(
   destination
 ):
   return shlex.join([
-    "pipenv",
-    "run",
-    "python",
+    "python3",
     __file__,
     "--z_centers_source_directory=%s" % z_centers_source_directory,
     "--distance_transforms_source_directory=%s" % distance_transforms_source_directory,
     "--nuclear_masks_source_directory=%s" % nuclear_masks_source_directory,
     "--spot_source_directory=%s" % spot_source_directory,
-    "--destination=%s" % destination,
-    *[str(spot_source) for spot_source in spot_sources]
+    "--destination=%s" % destination
   ])
 
-@cli.log.LoggingApp
-def generate_spot_result_line_cli(app):
-  for spot_source in app.params.spot_sources:
+parser = argparse.ArgumentParser()
+parser.add_argument("spot_sources", nargs="*")
+parser.add_argument("--z_centers_source_directory", required=True)
+parser.add_argument("--distance_transforms_source_directory", required=True)
+parser.add_argument("--nuclear_masks_source_directory", required=True)
+parser.add_argument("--spot_source_directory", required=True)
+parser.add_argument("--destination", required=True)
+
+def generate_spot_result_line_cli(parser):
+  args = parser.parse_args()
+  for spot_source in args.spot_sources:
     try:
       GenerateSpotResultLineJob(
         spot_source,
-        app.params.z_centers_source_directory,
-        app.params.distance_transforms_source_directory,
-        app.params.nuclear_masks_source_directory,
-        app.params.spot_source_directory,
-        app.params.destination,
+        args.z_centers_source_directory,
+        args.distance_transforms_source_directory,
+        args.nuclear_masks_source_directory,
+        args.spot_source_directory,
+        args.destination,
       ).run()
     except Exception as exception:
       traceback.print_exc()
 
-generate_spot_result_line_cli.add_param("spot_sources", nargs="*")
-generate_spot_result_line_cli.add_param("--z_centers_source_directory", required=True)
-generate_spot_result_line_cli.add_param("--distance_transforms_source_directory", required=True)
-generate_spot_result_line_cli.add_param("--nuclear_masks_source_directory", required=True)
-generate_spot_result_line_cli.add_param("--spot_source_directory", required=True)
-generate_spot_result_line_cli.add_param("--destination", required=True)
-
 if __name__ == "__main__":
-   generate_spot_result_line_cli.run()
+   generate_spot_result_line_cli(parser)

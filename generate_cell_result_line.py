@@ -7,13 +7,13 @@ from copy import copy
 from pathlib import Path
 from functools import lru_cache
 
-import cli.log
+import argparse
 import numpy
 
 from models.image_filename import ImageFilename
 from models.paths import *
 
-CELL_RESULT_FILE_SUFFIX_RE = re.compile("_nuclear_mask_(?P<nucleus_index>\d{3})")
+CELL_RESULT_FILE_SUFFIX_RE = re.compile("_nucleus_(?P<nucleus_index>\d{3})")
 
 
 @lru_cache(maxsize=1)
@@ -42,8 +42,9 @@ class GenerateCellResultLineJob:
   def csv_values(self):
     return {
       "filename": str(self.source_image_filename),
-      "experiment": self.source_image_filename.experiment,
-      "well": self.source_image_filename.well,
+      "date": self.date,
+      "group" : self.source_image_filename.group,
+      "position": self.source_image_filename.position,
       "field": self.source_image_filename.f,
       "channel": self.source_image_filename.c,
       "nucleus_index": self.nucleus_index,
@@ -166,39 +167,47 @@ class GenerateCellResultLineJob:
       self._area = numpy.count_nonzero(self.nuclear_mask)
     return self._area
 
+  @property
+  def date(self):
+    long_date_re = re.compile("(\d{4})-(\d{2})-(\d{2})")
+    if not hasattr(self, "_date"):
+      self._date = self.source_image_filename.date
+      long_date_match = long_date_re.match(self._date)
+      if(long_date_match):
+        self._date = str(long_date_match[0])+str(long_date_match[1])+str(long_date_match[2])
+    return self._date
+        
 
-def generate_cell_result_line_cli_str(masks, destination, source_images_dir, source_masks_dir):
-  serialized_masks_params = (str(param) for image_or_mask_param in masks for param in image_or_mask_param)
+
+def generate_cell_result_line_cli_str(destination, source_images_dir, source_masks_dir):
   return shlex.join([
-    "pipenv",
-    "run",
-    "python",
+    "python3",
     __file__,
     "--destination=%s" % destination,
     "--source_images_dir=%s" % source_images_dir,
-    "--source_masks_dir=%s" % source_masks_dir,
-    *serialized_masks_params
+    "--source_masks_dir=%s" % source_masks_dir
   ])
 
-@cli.log.LoggingApp
-def generate_cell_result_line_cli(app):
-  for mask_pair_start_index in (index * 2 for index in range(int(len(app.params.masks) / 2))):
-    source_image, source_mask = app.params.masks[mask_pair_start_index:mask_pair_start_index + 2]
+parser = argparse.ArgumentParser()
+parser.add_argument("masks", nargs="*")
+parser.add_argument("--destination", required=True)
+parser.add_argument("--source_images_dir", required=True)
+parser.add_argument("--source_masks_dir", required=True)
+
+def generate_cell_result_line_cli(parser):
+  args = parser.parse_args()
+  for mask_pair_start_index in (index * 2 for index in range(int(len(args.masks) / 2))):
+    source_image, source_mask = args.masks[mask_pair_start_index:mask_pair_start_index + 2]
     try:
       GenerateCellResultLineJob(
         source_image,
         source_mask,
-        app.params.destination,
-        app.params.source_images_dir,
-        app.params.source_masks_dir
+        args.destination,
+        args.source_images_dir,
+        args.source_masks_dir
       ).run()
     except Exception as exception:
       traceback.print_exc()
 
-generate_cell_result_line_cli.add_param("masks", nargs="*")
-generate_cell_result_line_cli.add_param("--destination", required=True)
-generate_cell_result_line_cli.add_param("--source_images_dir", required=True)
-generate_cell_result_line_cli.add_param("--source_masks_dir", required=True)
-
 if __name__ == "__main__":
-   generate_cell_result_line_cli.run()
+   generate_cell_result_line_cli(parser)

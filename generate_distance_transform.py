@@ -3,7 +3,7 @@ import logging
 import shlex
 import traceback
 
-import cli.log
+import argparse
 import numpy
 from scipy import ndimage
 
@@ -22,11 +22,11 @@ class GenerateDistanceTransformJob:
   @property
   def destination_filename(self):
     source_relative_path = str(self.source_path.relative_to(self.source_dir))
-    return self.destination_path / source_relative_path.replace("_nuclear_mask_", "_distance_transform_")
+    return self.destination_path / source_relative_path.replace("_nucleus_", "_dt_")
 
   @property
   def distance_transform(self):
-    if not hasattr(self, "_distance_transform"):
+    if not hasattr(self, "_dt"):
        raw_transform = ndimage.distance_transform_edt(self.nuclear_mask)
        normed_transform = raw_transform/numpy.amax(raw_transform)
        self._distance_transform = 1 - normed_transform
@@ -34,7 +34,7 @@ class GenerateDistanceTransformJob:
   
   @property
   def nuclear_mask(self):
-    if not hasattr(self, "_nuclear_mask"):
+    if not hasattr(self, "_mask"):
       self._nuclear_mask = numpy.load(self.source_path, allow_pickle=True).item().mask
     return self._nuclear_mask
 
@@ -57,32 +57,30 @@ class GenerateDistanceTransformJob:
       self._source_path = source_path(self.source)
     return self._source_path
 
-def generate_distance_transform_cli_str(sources, destination, source_dir):
+def generate_distance_transform_cli_str(destination, source_dir):
   return shlex.join([
-    "pipenv",
-    "run",
-    "python",
+    "python3",
     __file__,
     "--destination=%s" % destination,
-    "--source_dir=%s" % source_dir,
-    *[str(source) for source in sources]
+    "--source_dir=%s" % source_dir
   ])
 
-@cli.log.LoggingApp
-def generate_distance_transform_cli(app):
-  for source in app.params.sources:
+parser = argparse.ArgumentParser()
+parser.add_argument("sources", nargs="*")
+parser.add_argument("--destination", required=True)
+parser.add_argument("--source_dir", required=True)
+
+def generate_distance_transform_cli(parser):
+  args = parser.parse_args()
+  for source in args.sources:
     try:
       GenerateDistanceTransformJob(
         source,
-        app.params.destination,
-        app.params.source_dir,
+        args.destination,
+        args.source_dir,
       ).run()
     except Exception as exception:
       traceback.print_exc()
 
-generate_distance_transform_cli.add_param("sources", nargs="*")
-generate_distance_transform_cli.add_param("--destination", required=True)
-generate_distance_transform_cli.add_param("--source_dir", required=True)
-
 if __name__ == "__main__":
-   generate_distance_transform_cli.run()
+   generate_distance_transform_cli(parser)

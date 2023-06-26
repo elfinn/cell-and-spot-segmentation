@@ -3,20 +3,21 @@ import logging
 
 LOGGER = logging.getLogger()
 
-
 IMAGE_FILE_RE = re.compile( 
-    "(?P<date>\\d{8})/" +
-    "CS(?P<position>\\d{1})/" +
-    "(?P<group>.+)/" +
-    "p(?P<f>\\d{1,2}|XX)/" +
-    "ch(?P<c>\\d{1}|XX)/" +
-    "z(?P<z>\\d{1,2}|XX)"+
+    "(?P<date>\\d{4}-\\d{2}-\\d{2})"+
+    "/" +
+    "(?P<group>\\d{3})" +
+    "/" +
+    "(?P<project>.*)" +
+    "_(?P<position>[A-Z]\\d{2})" +
+    "_s(?P<f>\\d{1,2}|X)" +
+    "_w(?P<c>\\d{1}|X){0,1}"+
     "(?P<suffix>.*)" +
     "\." + 
     "(?P<extension>.+)"
   )
 
-class LSMImageFilename:
+class IMXImageFilename:
   @classmethod
   def parse(cls, image_filename_str):
     match = IMAGE_FILE_RE.match(image_filename_str)
@@ -24,44 +25,44 @@ class LSMImageFilename:
        raise Exception("invalid image filename: %s" % image_filename_str)
     return cls(
       date=match["date"],
-      position=match["position"],
+      project=match["project"],
       group=match["group"],
-      f=(None if match["f"] == "XXX" else int(match["f"])),
-      z=(None if match["z"] == "XX" else int(match["z"])),
-      c=(None if match["c"] == "XX" else int(match["c"])),
+      position=match["position"],
+      f=(None if match["f"] == "X" else int(match["f"])),
+      c=(None if match["c"] == "X" else int(match["c"])),
       suffix=match["suffix"],
-      extension=match["extension"],
+      extension=match["extension"]
     )
 
-  def __init__(self, date, position, group, f, z, c, suffix, extension):
+  def __init__(self, date, project, group, position, f, c, suffix, extension):
     self.date = date
-    self.position = position
+    self.project = project
     self.group = group
+    self.position = position
     self.f = f
-    self.z = z
     self.c = c
     self.suffix = suffix
     self.extension = extension
 
   def __str__(self):
-     return "%s/CS%s/%s/p%s/ch%s/z%s%s.%s" % (
+     return "%s/%s/%s_%s_s%s_w%s%s.%s" % (
        self.date,
-       self.position,
        self.group,
+       self.project,
+       self.position,
        self.f_str,
        self.c_str,
-       self.z_str,
        self.suffix,
        self.extension
      )
 
   def __copy__(self):
-    return LSMImageFilename(
-      date=self.date,
+    return IMXImageFilename(
+      date = self.date,
+      group = self.group,
+      project=self.project,
       position=self.position,
-      group=self.group,
       f=self.f,
-      z=self.z,
       c=self.c,
       suffix=self.suffix,
       extension=self.extension
@@ -69,12 +70,8 @@ class LSMImageFilename:
 
   @property
   def f_str(self):
-    return "XXX" if not self.f else ("%i" % self.f)
-
-  @property
-  def z_str(self):
-    return "XX" if not self.z else ("%i" % self.z)
+    return "X" if not self.f else (self.f)
 
   @property
   def c_str(self):
-    return "XX" if not self.c else ("%i" % self.c)
+    return "X" if not self.c else (self.c)

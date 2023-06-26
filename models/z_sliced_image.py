@@ -23,5 +23,7 @@ class ZSlicedImage:
   def z(self):
     if not hasattr(self, "_z"):
       image_filename = ImageFilename.parse(str(self.path.relative_to(self.source_dir)))
-      self._z = image_filename.z
+      if hasattr(image_filename, "z"):
+          self._z = image_filename.z
+      else: self._z = 0
     return self._z

@@ -160,8 +160,8 @@ parser.add_argument("--source_masks_dir", required=True)
 
 def generate_cropped_cell_image_cli(parser):
   args = parser.parse_args()
-  for mask_pair_start_index in (index*2 for index in range(int(len(args.serialized_files)/2))):
-    source_image, source_mask = args.serialized_files[mask_pair_start_index : mask_pair_start_index + 2]
+  for mask_pair in args.serialized_files:
+    source_image, source_mask = mask_pair.split(';')
     try:
       GenerateCroppedCellImageJob(
         source_image,

@@ -8,9 +8,10 @@ from models.paths import *
 
 
 class GenerateSpotResultsFileJob:
-  def __init__(self, source, destination):
+  def __init__(self, source, destination, prefix):
     self.source = source
     self.destination = destination
+    self.prefix = prefix
 
   def run(self):
     with open(self.destination_filename, 'w') as destination_file:
@@ -55,7 +56,7 @@ class GenerateSpotResultsFileJob:
   @property
   def destination_filename(self):
     if not hasattr(self, "_destination_filename"):
-      self._destination_filename = self.destination_path / ("%s_spot_positions.csv" % self.arbitrary_result_line_image_filename.date)
+      self._destination_filename = self.destination_path / ("%s_spot_positions.csv" % self.prefix)
     return self._destination_filename
   
   @property

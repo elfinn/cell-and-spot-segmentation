@@ -52,7 +52,7 @@ class GenerateAllCellResultLinesJob:
       ]
       with self._file_dictionary.open("w") as file_dictionary:
         for tuple in masks:
-            file_dictionary.write("%s\n%s\n"%(str(tuple[0]), str(tuple[1])))
+            file_dictionary.write("%s;%s\n"%(str(tuple[0]), str(tuple[1])))
     return self._file_dictionary
 
   @property

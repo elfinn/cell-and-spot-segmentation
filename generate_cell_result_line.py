@@ -174,7 +174,7 @@ class GenerateCellResultLineJob:
       self._date = self.source_image_filename.date
       long_date_match = long_date_re.match(self._date)
       if(long_date_match):
-        self._date = str(long_date_match[0])+str(long_date_match[1])+str(long_date_match[2])
+        self._date = str(long_date_match[1])+str(long_date_match[2])+str(long_date_match[3])
     return self._date
         
 
@@ -196,8 +196,8 @@ parser.add_argument("--source_masks_dir", required=True)
 
 def generate_cell_result_line_cli(parser):
   args = parser.parse_args()
-  for mask_pair_start_index in (index * 2 for index in range(int(len(args.masks) / 2))):
-    source_image, source_mask = args.masks[mask_pair_start_index:mask_pair_start_index + 2]
+  for mask_pair in args.masks:
+    source_image, source_mask = mask_pair.split(';')
     try:
       GenerateCellResultLineJob(
         source_image,

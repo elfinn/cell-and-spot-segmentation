@@ -86,11 +86,11 @@ class SwarmJob:
                                       "#SBATCH --output %s"%self.log_file_path,
                                       "##SBATCH --mail-user %s@omrf.org"%self.user,
                                       "#SBATCH --mail-type END,FAIL,ARRAY_TASKS",
-                                      "#SBATCH --mem 16G",
+                                      "#SBATCH --mem 0",
                                       "#SBATCH -p serial",
                                       "#SBATCH --nodes 1",
                                       "#SBATCH --cpus-per-task 2",
-                                      "#SBATCH -t 6:00:00", "",
+                                      "#SBATCH -t 12:00:00", "",
                                       "set -eux",
                                       "export FILE_TYPE=\"%s\""%self.file_type, "",
                                       "module load slurm",
@@ -110,5 +110,5 @@ class SwarmJob:
       if self.run_strategy == RunStrategy.LOCAL:
         self._jobs = 1
       else:
-        self._jobs = 0
+        self._jobs = 16
     return self._jobs

@@ -146,7 +146,7 @@ class GenerateSpotPositionsJob:
     marker = skimage.segmentation.flood(
       self.image,
       integer_spot,
-      tolerance=(self.image[integer_spot] - local_background) / 2
+      tolerance=(self.image[integer_spot] - local_background) / 3
     )
     marker_int = marker.astype(numpy.uint8)
     props = skimage.measure.regionprops(marker_int, self.image)

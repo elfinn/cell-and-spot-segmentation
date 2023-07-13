@@ -120,7 +120,7 @@ class GenerateSpotResultLineJob:
       self._date = self.source_image_filename.date
       long_date_match = long_date_re.match(self._date)
       if(long_date_match):
-        self._date = str(long_date_match[0])+str(long_date_match[1])+str(long_date_match[2])
+        self._date = str(long_date_match[1])+str(long_date_match[2])+str(long_date_match[3])
     return self._date
         
 

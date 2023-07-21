@@ -41,7 +41,8 @@ class GenerateSpotPositionsJob:
     source,
     destination,
     source_dir,
-    user_determined_local_contrast_threshold=None,
+    user_determined_LoG_threshold=None,
+    user_determined_local_threshold=None,
     user_determined_radius=None,
     user_determined_global_threshold=None,
     config=None
@@ -49,7 +50,8 @@ class GenerateSpotPositionsJob:
     self.source = source
     self.destination = destination
     self.source_dir = Path(source_dir)
-    self.user_determined_local_contrast_threshold = user_determined_local_contrast_threshold
+    self.user_determined_LoG_threshold = user_determined_LoG_threshold
+    self.user_determined_local_threshold = user_determined_local_threshold
     self.user_determined_radius = user_determined_radius
     self.user_determined_global_threshold = user_determined_global_threshold
     self.config = config
@@ -93,7 +95,7 @@ class GenerateSpotPositionsJob:
   @property
   def threshold(self):
     if not hasattr(self, "_threshold"):
-      self._threshold = self.image_background * self.local_contrast_threshold
+      self._threshold = self.image_background * self.LoG_threshold
     return self._threshold
 
   @property
@@ -111,8 +113,24 @@ class GenerateSpotPositionsJob:
   @property
   def raw_spots(self):
     if not hasattr(self, "_raw_spots"):
-      self._raw_spots = skimage.feature.blob_log(self.filtered_image, min_sigma=0.3, max_sigma=0.3, threshold=self.threshold)
+      self._raw_spots = skimage.feature.blob_log(self.filtered_image, min_sigma=0.3, max_sigma=0.3, threshold=self.LoG_threshold)
     return self._raw_spots
+
+  @property
+  def local_filtered_spots(self):
+    if not hasattr(self, "_local_filtered_spots"):
+      expanded_radius = 2*int(self.peak_radius)
+      max_x = numpy.shape(self.image)[0]
+      max_y = numpy.shape(self.image)[1]
+      self._local_filtered_spots = [
+          (int(x), int(y))
+          for x, y
+          in self.global_filtered_spots
+          if self.image[int(x), int(y)] > self.local_contrast_threshold*numpy.mean(
+              self.image[max(0,int(x)-expanded_radius):min(int(x)+expanded_radius, max_x), 
+                         max(0,int(y)-expanded_radius):min(int(y)+expanded_radius, max_y)])
+      ]
+    return self._local_filtered_spots
 
   @property
   def global_filtered_spots(self):
@@ -131,7 +149,7 @@ class GenerateSpotPositionsJob:
       self._spots = [
         self.find_spot_props(spot)
         for spot
-        in self.global_filtered_spots
+        in self.local_filtered_spots
       ]
     return self._spots
 
@@ -163,11 +181,11 @@ class GenerateSpotPositionsJob:
     return self._image_background
 
   @property
-  def local_contrast_threshold(self):
-    if self.user_determined_local_contrast_threshold != None:
-      return self.user_determined_local_contrast_threshold
+  def LoG_threshold(self):
+    if self.user_determined_LoG_threshold != None:
+      return self.user_determined_LoG_threshold
     if self.channel_specific_config != None:
-      return self.channel_specific_config.local_contrast_threshold
+      return self.channel_specific_config.LoG_threshold
     if self.source_image_filename.c == 3:
       return 4
     return 2.75
@@ -188,6 +206,14 @@ class GenerateSpotPositionsJob:
       return self.user_determined_global_threshold
     if self.channel_specific_config != None:
       return self.channel_specific_config.global_contrast_threshold
+    return 0
+
+  @property
+  def local_contrast_threshold(self):
+    if self.user_determined_local_threshold != None:
+      return self.user_determined_local_threshold
+    if self.channel_specific_config != None:
+      return self.channel_specific_config.local_contrast_threshold
     return 0
 
   @property
